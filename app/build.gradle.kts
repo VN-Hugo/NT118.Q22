@@ -58,4 +58,5 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-auth")
+    implementation("androidx.navigation:navigation-compose:2.8.0")
 }
