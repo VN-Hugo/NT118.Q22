@@ -22,7 +22,7 @@ import com.example.travelapp.R
 
 
 @Composable
-fun WelcomeScreen(onNavigateToLogin: () -> Unit) {
+fun WelcomeScreen(onNavigateToLogin: () -> Unit, onNavigateToRegister: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize()) {
         // 1. Hình nền
         Image(
@@ -57,16 +57,16 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit) {
             verticalArrangement = Arrangement.Bottom
         ) {
             Text(
-                text = "Chào mừng bạn \ntới Travel App",
+                text = "Chào mừng bạn \ntới Booking Lite",
                 fontSize = 42.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 lineHeight = 48.sp,
                 modifier = Modifier.padding(bottom = 40.dp)
             )
-
+            // Tạo tài khoản mới
             Button(
-                onClick = { /* Xử lý */ },
+                onClick = { onNavigateToRegister() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

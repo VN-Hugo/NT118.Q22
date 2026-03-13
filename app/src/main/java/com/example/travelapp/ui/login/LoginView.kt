@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack // Import thêm icon Back
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,20 +23,22 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.travelapp.R
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.clickable
-@OptIn(ExperimentalMaterial3Api::class)
+import com.example.travelapp.R
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(onBack: () -> Unit,   onLoginSuccess: () -> Unit)  {
-    // State quản lý dữ liệu nhập vào
+fun LoginScreen(
+    onBack: () -> Unit,
+    onLoginSuccess: () -> Unit,
+    onNavigateToRegister: () -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Hình nền (Dùng chung với Welcome Screen)
+        // 1. Hình nền
         Image(
             painter = painterResource(id = R.drawable.background),
             contentDescription = null,
@@ -42,7 +46,7 @@ fun LoginScreen(onBack: () -> Unit,   onLoginSuccess: () -> Unit)  {
             contentScale = ContentScale.Crop
         )
 
-        // 2. Lớp phủ Gradient (Làm tối nền để chữ trắng nổi bật)
+        // 2. Lớp phủ Gradient
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -57,15 +61,32 @@ fun LoginScreen(onBack: () -> Unit,   onLoginSuccess: () -> Unit)  {
                 )
         )
 
-        // 3. Nội dung chính
+        // 3. Nút Back (Mới thêm)
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .statusBarsPadding() // Đảm bảo nút không bị đè bởi thanh pin/sóng
+                .padding(start = 8.dp, top = 8.dp)
+                .align(Alignment.TopStart)
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Quay lại",
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+
+        // 4. Nội dung chính
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
-                .statusBarsPadding(), // Tránh bị đè bởi thanh trạng thái hệ thống
+                .padding(horizontal = 24.dp)
+                .statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
+            // Tăng Spacer để không bị nút Back đè lên tiêu đề
+            Spacer(modifier = Modifier.height(80.dp))
 
             // Tiêu đề
             Text(
@@ -188,7 +209,7 @@ fun LoginScreen(onBack: () -> Unit,   onLoginSuccess: () -> Unit)  {
                     text = "Đăng ký ngay",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { /* Điều hướng Đăng ký */ }
+                    modifier = Modifier.clickable { onNavigateToRegister() }
                 )
             }
         }
