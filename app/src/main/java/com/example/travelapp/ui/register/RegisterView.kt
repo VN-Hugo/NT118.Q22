@@ -19,18 +19,25 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.travelapp.R
-import androidx.compose.ui.tooling.preview.Preview
-@Preview(showBackground = true, showSystemUi = true)
+import com.example.travelapp.ui.login.AuthViewModel
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen(onBackClick: () -> Unit = {}) {
-    // Các biến tạm thời để lưu giá trị nhập vào (Sau này sẽ đưa vào ViewModel)
+fun RegisterScreen(
+    onBackClick: () -> Unit,
+    onRegisterSuccess: () -> Unit,
+    viewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+
+    // Khai báo biến lỗi để code không bị báo đỏ nữa
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Hình nền (Dùng lại ảnh background của bạn)
+        // 1. Hình nền
         Image(
             painter = painterResource(id = R.drawable.background),
             contentDescription = null,
@@ -38,7 +45,7 @@ fun RegisterScreen(onBackClick: () -> Unit = {}) {
             contentScale = ContentScale.Crop
         )
 
-        // 2. Lớp phủ Gradient tối để nổi bật các ô nhập liệu
+        // 2. Lớp phủ Gradient
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -52,21 +59,18 @@ fun RegisterScreen(onBackClick: () -> Unit = {}) {
                 )
         )
 
-        // 3. Nút quay lại (Back Button)
+        // 3. Nút quay lại
         IconButton(
             onClick = onBackClick,
             modifier = Modifier
-                .padding(top = 40.dp, start = 16.dp)
+                .statusBarsPadding()
+                .padding(start = 8.dp)
                 .align(Alignment.TopStart)
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White
-            )
+            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
         }
 
-        // 4. Nội dung Form Đăng ký
+        // 4. Nội dung Form
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -140,11 +144,12 @@ fun RegisterScreen(onBackClick: () -> Unit = {}) {
                 )
             )
 
-
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Ô nhập Xác nhận Mật khẩu
             OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
                 label = { Text("Xác nhận Mật khẩu", color = Color.White.copy(alpha = 0.6f)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -157,34 +162,50 @@ fun RegisterScreen(onBackClick: () -> Unit = {}) {
                 )
             )
 
+            // Hiển thị thông báo lỗi ngay trên nút Đăng ký
+            errorMessage?.let {
+                Text(
+                    text = it,
+                    color = Color(0xFFFF5252), // Màu đỏ tươi cho dễ nhìn trên nền tối
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Nút Đăng ký (Style giống nút ở Login)
+            // Nút Đăng ký
             Button(
-                onClick = { /* Xử lý đăng ký */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                onClick = {
+                    when {
+                        name.isEmpty() || email.isEmpty() || password.isEmpty() -> {
+                            errorMessage = "Vui lòng nhập đầy đủ thông tin!"
+                        }
+                        password != confirmPassword -> {
+                            errorMessage = "Mật khẩu xác nhận không khớp!"
+                        }
+                        password.length < 6 -> {
+                            errorMessage = "Mật khẩu phải có ít nhất 6 ký tự!"
+                        }
+                        else -> {
+                            errorMessage = null
+                            val testUid = "user_${System.currentTimeMillis()}"
+                            viewModel.createNewUser(testUid, email, name)
+                            onRegisterSuccess()
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
-                Text(
-                    text = "Đăng ký",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Đăng ký", color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Link quay lại đăng nhập
             TextButton(onClick = onBackClick) {
-                Text(
-                    text = "Bạn đã có tài khoản? Đăng nhập",
-                    color = Color.White
-                )
+                Text("Bạn đã có tài khoản? Đăng nhập", color = Color.White)
             }
         }
     }
