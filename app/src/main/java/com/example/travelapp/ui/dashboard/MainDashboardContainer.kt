@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.travelapp.Routes
 import com.example.travelapp.ui.components.TravelBottomBar
+import com.example.travelapp.ui.planner.AIPlannerScreen
 
 @Composable
 fun MainDashboardContainer(rootNavController: NavHostController) {
@@ -41,6 +42,7 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
             composable("home") { SmartTravelHomeScreen() }
 
             composable("profile") {
+                 ProfileScreen()
                 // Ví dụ màn hình Profile có nút Logout
 //                ProfileScreen(onLogout = {
 //                    // Dùng rootNavController để thoát ra màn hình Login bên ngoài
@@ -49,8 +51,15 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
 //                    }
 //                })
             }
-
-            // Thêm các tab khác (explore, trips, ai_planner) tương tự...
+            composable("ai_planner") {
+                AIPlannerScreen()
+            }
+            composable("explore") {
+                ExploreScreen()
+            }
+            composable("trips") {
+                MyTripsScreen()
+            }
         }
     }
 }
