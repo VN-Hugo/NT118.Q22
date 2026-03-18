@@ -41,8 +41,8 @@
 
 ## SEMINAR
 <a name="seminar"></a>
-Seminar nhóm: Việc ứng dụng AI vào trang web Thương mại điện tử. Việc này có ưu khuyết điểm gì, có khó khăn gì. Trình bày 1 số giải pháp và cách thực hiện. Ví dụ: Tích hợp AI Chatbot/Agent vào Website, Ứng dụng Recommendation Systems...
+
 
 ## ĐỒ ÁN MÔN HỌC
 <a name="doan"></a>
-Đồ án Nhóm: Web TMĐT B2C (Website bán hàng điện tử)
+Đồ án Nhóm: App quản lý du lịch BookingLite
