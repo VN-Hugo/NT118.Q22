@@ -24,6 +24,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.travelapp.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,12 +34,28 @@ import com.example.travelapp.R
 fun LoginScreen(
     onBack: () -> Unit,
     onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit
+    onNavigateToRegister: () -> Unit,
+    authViewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-
+    val context = LocalContext.current
+    val authState = authViewModel.authState
+    // Xử lý khi đăng nhập thành công hoặc lỗi (Side Effect)
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Success -> {
+                onLoginSuccess()
+                authViewModel.resetState() // Reset để không bị lặp lại logic
+            }
+            is AuthState.Error -> {
+                Toast.makeText(context, authState.message, Toast.LENGTH_SHORT).show()
+                authViewModel.resetState()
+            }
+            else -> {}
+        }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         // 1. Hình nền
         Image(
@@ -61,7 +80,7 @@ fun LoginScreen(
                 )
         )
 
-        // 3. Nút Back (Mới thêm)
+        // 3. Nút Back
         IconButton(
             onClick = onBack,
             modifier = Modifier
@@ -182,19 +201,19 @@ fun LoginScreen(
 
             // Nút Đăng nhập
             Button(
-                onClick = { onLoginSuccess() },
+                onClick = { authViewModel.login(email, password) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White) ,
+                enabled = authState !is AuthState.Loading // Vô hiệu hóa khi đang load
             ) {
-                Text(
-                    "Đăng nhập",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (authState is AuthState.Loading) {
+                    CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
+                } else {
+                    Text("Đăng nhập", color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
             }
 
             Spacer(modifier = Modifier.weight(1f))

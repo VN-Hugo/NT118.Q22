@@ -1,5 +1,6 @@
 package com.example.travelapp.ui.register
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,12 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.travelapp.R
+import com.example.travelapp.ui.login.AuthState
 import com.example.travelapp.ui.login.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,178 +36,144 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
-    // Khai báo biến lỗi để code không bị báo đỏ nữa
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val authState = viewModel.authState
+
+    // Xử lý kết quả Đăng ký (Thành công / Lỗi)
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Success -> {
+                Toast.makeText(context, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
+                onRegisterSuccess()
+                viewModel.resetState()
+            }
+            is AuthState.Error -> {
+                Toast.makeText(context, authState.message, Toast.LENGTH_SHORT).show()
+                viewModel.resetState()
+            }
+            else -> {}
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Hình nền
+        // --- 1. Hình nền & 2. Gradient (Giữ nguyên) ---
         Image(
             painter = painterResource(id = R.drawable.background),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
-
-        // 2. Lớp phủ Gradient
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.3f),
-                            Color.Black.copy(alpha = 0.8f)
-                        )
-                    )
-                )
-        )
+        Box(modifier = Modifier.fillMaxSize().background(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.Black.copy(alpha = 0.3f), Color.Black.copy(alpha = 0.8f))
+            )
+        ))
 
         // 3. Nút quay lại
         IconButton(
             onClick = onBackClick,
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(start = 8.dp)
-                .align(Alignment.TopStart)
+            modifier = Modifier.statusBarsPadding().padding(8.dp).align(Alignment.TopStart),
+            enabled = authState !is AuthState.Loading
         ) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
         }
 
         // 4. Nội dung Form
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
+            modifier = Modifier.fillMaxSize().padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "Tạo tài khoản mới",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.align(Alignment.Start)
-            )
+            Text("Tạo tài khoản mới", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.align(Alignment.Start))
+            Text("Bắt đầu hành trình khám phá cùng chúng tôi", fontSize = 16.sp, color = Color.White.copy(alpha = 0.7f), modifier = Modifier.align(Alignment.Start).padding(bottom = 32.dp))
 
-            Text(
-                text = "Bắt đầu hành trình khám phá Alps cùng chúng tôi",
-                fontSize = 16.sp,
-                color = Color.White.copy(alpha = 0.7f),
-                modifier = Modifier.align(Alignment.Start).padding(bottom = 32.dp)
-            )
+            // --- Các ô nhập liệu (Thêm enabled = authState !is AuthState.Loading) ---
+            val isNotLoading = authState !is AuthState.Loading
 
-            // Ô nhập Họ tên
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Họ và tên", color = Color.White.copy(alpha = 0.6f)) },
+                label = { Text("Họ và tên") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
-                    cursorColor = Color.White
-                )
+                enabled = isNotLoading,
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color.White, unfocusedBorderColor = Color.White.copy(alpha = 0.4f))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Ô nhập Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email", color = Color.White.copy(alpha = 0.6f)) },
+                label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.4f)
-                )
+                enabled = isNotLoading,
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color.White, unfocusedBorderColor = Color.White.copy(alpha = 0.4f))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Ô nhập Mật khẩu
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Mật khẩu", color = Color.White.copy(alpha = 0.6f)) },
+                label = { Text("Mật khẩu") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
+                enabled = isNotLoading,
                 visualTransformation = PasswordVisualTransformation(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.4f)
-                )
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color.White, unfocusedBorderColor = Color.White.copy(alpha = 0.4f))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Ô nhập Xác nhận Mật khẩu
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                label = { Text("Xác nhận Mật khẩu", color = Color.White.copy(alpha = 0.6f)) },
+                label = { Text("Xác nhận Mật khẩu") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
+                enabled = isNotLoading,
                 visualTransformation = PasswordVisualTransformation(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.4f)
-                )
+                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color.White, unfocusedBorderColor = Color.White.copy(alpha = 0.4f))
             )
 
-            // Hiển thị thông báo lỗi ngay trên nút Đăng ký
-            errorMessage?.let {
-                Text(
-                    text = it,
-                    color = Color(0xFFFF5252), // Màu đỏ tươi cho dễ nhìn trên nền tối
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
+            Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Nút Đăng ký
+            // 5. Nút Đăng ký (Sửa logic onClick)
             Button(
                 onClick = {
                     when {
                         name.isEmpty() || email.isEmpty() || password.isEmpty() -> {
-                            errorMessage = "Vui lòng nhập đầy đủ thông tin!"
+                            Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show()
                         }
                         password != confirmPassword -> {
-                            errorMessage = "Mật khẩu xác nhận không khớp!"
+                            Toast.makeText(context, "Mật khẩu xác nhận không khớp!", Toast.LENGTH_SHORT).show()
                         }
                         password.length < 6 -> {
-                            errorMessage = "Mật khẩu phải có ít nhất 6 ký tự!"
+                            Toast.makeText(context, "Mật khẩu phải có ít nhất 6 ký tự!", Toast.LENGTH_SHORT).show()
                         }
                         else -> {
-                            errorMessage = null
-                            val testUid = "user_${System.currentTimeMillis()}"
-                            viewModel.createNewUser(testUid, email, name)
-                            onRegisterSuccess()
+                            // Gọi hàm signUp mới thay cho createNewUser
+                            viewModel.signUp(email, password, name)
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                enabled = isNotLoading
             ) {
-                Text("Đăng ký", color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                if (authState is AuthState.Loading) {
+                    CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
+                } else {
+                    Text("Đăng ký", color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TextButton(onClick = onBackClick) {
+            TextButton(onClick = onBackClick, enabled = isNotLoading) {
                 Text("Bạn đã có tài khoản? Đăng nhập", color = Color.White)
             }
         }
