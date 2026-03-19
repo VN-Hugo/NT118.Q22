@@ -1,0 +1,27 @@
+# --- Các file chung của IDE (IntelliJ / Android Studio) ---
+.idea/
+*.iml
+out/
+gen/
+.DS_Store
+captures/
+
+# --- Dành cho Backend (Spring Boot / Gradle) ---
+backend/.gradle/
+backend/build/
+backend/bin/
+backend/help.gradle
+backend/.metadata/
+
+# --- Dành cho Frontend (Android / Kotlin) ---
+frontend/.gradle/
+frontend/build/
+frontend/local.properties
+frontend/.cxx/
+frontend/*.keystore
+!frontend/debug.keystore
+
+# --- Các file log và tạm ---
+*.log
+*.temp
+*.tmp
