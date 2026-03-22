@@ -9,7 +9,7 @@ interface Place {
     val location: String
     val price: String
     val rating: String
-    val imageBg: Color // Sau này đổi thành String (URL) hoặc Int (Resource ID)
+    val imageBg: String
 }
 
 /**
@@ -17,12 +17,12 @@ interface Place {
  */
 data class Hotel(
     override val id: String = "",
-    override val name: String,
-    override val location: String,
-    override val price: String,
-    override val rating: String,
-    override val imageBg: Color,
-    val starCount: Int,         // Riêng khách sạn: 3*, 4*, 5*
+    override val name: String = "",
+    override val location: String = "",
+    override val price: String = "",
+    override val rating: String = "",
+    override val imageBg: String = "",
+    val starCount: Int = 0,         // Riêng khách sạn: 3*, 4*, 5*
     val hasWifi: Boolean = true
 ) : Place
 
@@ -31,12 +31,12 @@ data class Hotel(
  */
 data class Restaurant(
     override val id: String = "",
-    override val name: String,
-    override val location: String,
-    override val price: String,
-    override val rating: String,
-    override val imageBg: Color,
-    val cuisineType: String,
+    override val name: String = "",
+    override val location: String= "",
+    override val price: String = "",
+    override val rating: String = "",
+    override val imageBg: String = "",
+    val cuisineType: String = "",
     val isOpening: Boolean = true
 ) : Place
 
@@ -45,10 +45,10 @@ data class Restaurant(
  */
 data class Attraction(
     override val id: String = "",
-    override val name: String,
-    override val location: String,
-    override val price: String,
-    override val rating: String,
-    override val imageBg: Color,
-    val openingHours: String
+    override val name: String = "",
+    override val location: String = "",
+    override val price: String = "",
+    override val rating: String = "",
+    override val imageBg: String = "",
+    val openingHours: String = ""
 ) : Place

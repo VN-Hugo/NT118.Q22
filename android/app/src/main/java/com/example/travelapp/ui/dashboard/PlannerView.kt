@@ -19,10 +19,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.ai.client.generativeai.GenerativeModel
+import kotlinx.coroutines.launch
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AIPlannerScreen() {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // Biến lưu trữ input điểm đến
+    var destination by remember { mutableStateOf("") }
+    // Biến lưu kết quả AI
+    var aiResult by remember { mutableStateOf("") }
+    var showResultDialog by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    // Khởi tạo Model (Sửa API Key của bạn vào đây)
+    val generativeModel = remember {
+        GenerativeModel(
+            modelName = "gemini-3-flash-preview",
+            apiKey = "AIzaSyBjc3sAFpb-_gOPo8KqjOLrIhaZh4c_5Dg"
+        )
+    }
+
     var duration by remember { mutableIntStateOf(3) }
     var budgetValue by remember { mutableFloatStateOf(0.5f)  }
 
@@ -52,7 +75,9 @@ fun AIPlannerScreen() {
 
         SectionLabel("ĐIỂM ĐẾN")
         OutlinedTextField(
-            value = "", onValueChange = {}, modifier = Modifier.fillMaxWidth(),
+            value = destination, // Gán biến destination vào đây
+            onValueChange = { destination = it },
+            modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Bạn muốn đi đâu?", color = Color.LightGray) },
             leadingIcon = { Icon(Icons.Default.LocationOn, null, tint = Color(0xFF2196F3)) },
             shape = RoundedCornerShape(16.dp),
@@ -132,28 +157,94 @@ fun AIPlannerScreen() {
         Spacer(modifier = Modifier.height(24.dp))
 
         SectionLabel("SỞ THÍCH DU LỊCH")
-        // SỬA LỖI Ở ĐÂY: Dùng Layout thủ công để tạo FlowRow "bất tử"
+
+        val interests = listOf("Khám phá", "Ẩm thực", "Nghỉ dưỡng", "Văn hóa", "Mua sắm")
+        val selectedInterests = remember { mutableStateListOf<String>() }
+
         SimpleFlowRow(spacing = 8.dp) {
-            InterestTag("Khám phá", Icons.Default.Person, isSelected = true)
-            InterestTag("Ẩm thực", Icons.Default.Phone)
-            InterestTag("Nghỉ dưỡng", Icons.Default.Person)
-            InterestTag("Văn hóa", Icons.Default.Person)
-            InterestTag("Mua sắm", Icons.Default.Person)
+            interests.forEach { interest ->
+                val isSelected = selectedInterests.contains(interest)
+                InterestTag(
+                    text = interest,
+                    icon = Icons.Default.Check, // Hoặc icon phù hợp
+                    isSelected = isSelected,
+                    onSelect = {
+                        // Nếu đã chọn rồi thì bỏ chọn, chưa chọn thì thêm vào danh sách
+                        if (isSelected) {
+                            selectedInterests.remove(interest)
+                        } else {
+                            selectedInterests.add(interest)
+                        }
+                    }
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(40.dp))
 
         Button(
-            onClick = { },
+            onClick = {
+                if (destination.isBlank()) {
+                    Toast.makeText(context, "Vui lòng nhập điểm đến!", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                isLoading = true
+                coroutineScope.launch {
+                    try {
+                        // TỰ ĐỘNG TẠO CÂU LỆNH (PROMPT) TỪ GIAO DIỆN
+                        val budgetText = if (budgetValue < 0.3f) "tiết kiệm" else if (budgetValue < 0.7f) "trung bình" else "sang trọng"
+                        val prompt = "Hãy lên lịch trình du lịch đi $destination trong $duration ngày. " +
+                                    "Ngân sách: $budgetText. " +
+                                    "Sở thích: ${selectedInterests.joinToString(", ")}. " +
+                                    "Trình bày rõ ràng từng ngày."
+                        Log.d("AI_DEBUG", "Câu lệnh gửi đi: $prompt")
+
+                        val response = generativeModel.generateContent(prompt)
+
+                        Log.d("AI_DEBUG", "Kết quả trả về: ${response.text}")
+
+                        aiResult = response.text ?: "Không có kết quả"
+                        showResultDialog = true // Mở bảng kết quả
+                    } catch (e: Exception) {
+                        aiResult = "Lỗi: ${e.localizedMessage}"
+                        showResultDialog = true
+                    } finally {
+                        isLoading = false
+                    }
+                }
+            },
             modifier = Modifier.fillMaxWidth().height(56.dp),
+            enabled = !isLoading,
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007BFF))
         ) {
-            Icon(Icons.Default.Person, null, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(10.dp))
-            Text("Tạo lịch trình bằng AI", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+//            Icon(Icons.Default.Person, null, modifier = Modifier.size(20.dp))
+//            Spacer(modifier = Modifier.width(10.dp))
+//            Text("Tạo lịch trình bằng AI", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            if (isLoading) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+            } else {
+                Icon(Icons.Default.AutoAwesome, null, modifier = Modifier.size(20.dp)) // Dùng icon AutoAwesome cho "AI"
+                Spacer(modifier = Modifier.width(10.dp))
+                Text("Tạo lịch trình bằng AI", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
         }
         Spacer(modifier = Modifier.height(30.dp))
+    }
+    if (showResultDialog) {
+        AlertDialog(
+            onDismissRequest = { showResultDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showResultDialog = false }) { Text("Đóng") }
+            },
+            title = { Text("Lịch trình đề xuất ✨") },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text(text = aiResult)
+                }
+            }
+        )
     }
 }
 
@@ -206,16 +297,35 @@ fun SectionLabel(text: String) {
 }
 
 @Composable
-fun InterestTag(text: String, icon: ImageVector, isSelected: Boolean = false) {
+fun InterestTag(
+    text: String,
+    icon: ImageVector,
+    isSelected: Boolean = false,
+    onSelect: () -> Unit // Thêm dòng này để nhận sự kiện click
+) {
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = if (isSelected) Color(0xFF007BFF) else Color(0xFFF1F3F5),
-        modifier = Modifier.clickable { }
+        // SỬA Ở ĐÂY: Gọi onSelect() khi người dùng bấm vào
+        modifier = Modifier.clickable { onSelect() }
     ) {
-        Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, modifier = Modifier.size(16.dp), tint = if (isSelected) Color.White else Color.DarkGray)
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                icon,
+                null,
+                modifier = Modifier.size(16.dp),
+                tint = if (isSelected) Color.White else Color.DarkGray
+            )
             Spacer(modifier = Modifier.width(6.dp))
-            Text(text, color = if (isSelected) Color.White else Color.DarkGray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(
+                text = text,
+                color = if (isSelected) Color.White else Color.DarkGray,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }

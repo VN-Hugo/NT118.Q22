@@ -19,11 +19,50 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 
 // 1. Data Models (Nên tách ra file riêng nếu dùng ở nhiều màn hình khác nhau)
-data class Hotel(val name: String, val location: String, val price: String, val rating: String)
+import com.example.travelapp.model.Hotel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.ViewModel
+import com.example.travelapp.repository.PlaceRepository
+
+
 data class Deal(val title: String, val desc: String, val tag: String, val color: Color)
 
+class HomeViewModel : ViewModel() {
+    // 1. Khởi tạo kho dữ liệu
+    private val repository = PlaceRepository()
+
+    // 2. Tạo một biến trạng thái để chứa danh sách khách sạn.
+    // Giao diện sẽ "lắng nghe" biến này, hễ có data là nó tự động vẽ lên!
+    var hotelList = mutableStateOf<List<Hotel>>(emptyList())
+        private set
+
+    // 3. Hàm gọi xuống Repository để lấy dữ liệu từ mạng về
+    fun loadHotels() {
+        repository.getAllHotels(
+            onSuccess = { data ->
+                hotelList.value = data // Cập nhật dữ liệu vào biến trạng thái
+            },
+            onFailure = { exception ->
+                // Xử lý báo lỗi ở đây nếu cần (VD: in log)
+            }
+        )
+    }
+}
+
 @Composable
-fun SmartTravelHomeScreen() {
+fun SmartTravelHomeScreen(
+    viewModel: HomeViewModel = viewModel() // Bơm ViewModel vào đây
+) {
+    // 1. Lắng nghe danh sách khách sạn từ ViewModel
+    val hotels = viewModel.hotelList.value
+
+    // 2. Tự động tải dữ liệu khi vừa mở màn hình
+    LaunchedEffect(Unit) {
+        viewModel.loadHotels()
+    }
+
     // CHÚ Ý: Đã bỏ Scaffold và BottomBar vì DashboardContainer đã quản lý rồi
     Column(
         modifier = Modifier
@@ -36,15 +75,16 @@ fun SmartTravelHomeScreen() {
         FeaturedCard()
 
         SectionHeader(title = "Suggested Hotels", hasSeeAll = true)
-        HotelList()
+
+        // Truyền dữ liệu thật vào đây
+        HotelList(hotels = hotels)
 
         SectionHeader(title = "Limited Time Deals", hasSeeAll = false)
         DealsList()
 
-        Spacer(modifier = Modifier.height(24.dp)) // Tạo khoảng trống cuối trang
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
-
 // --- Thành phần UI nhỏ ---
 
 @Composable
@@ -135,15 +175,13 @@ fun SectionHeader(title: String, hasSeeAll: Boolean) {
 }
 
 @Composable
-fun HotelList() {
-    val hotels = listOf(
-        Hotel("Azure Bay Resort", "Santorini, Greece", "$240", "4.9"),
-        Hotel("The Urban Loft", "Athens, Greece", "$185", "4.7")
-    )
+fun HotelList(hotels: List<Hotel>) { // <-- 1. Yêu cầu truyền danh sách vào đây
+
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 2. Vẽ danh sách dựa trên biến 'hotels' truyền vào
         items(hotels) { hotel ->
             Card(
                 modifier = Modifier.width(220.dp),
