@@ -42,7 +42,7 @@ fun AIPlannerScreen() {
     val generativeModel = remember {
         GenerativeModel(
             modelName = "gemini-3-flash-preview",
-            apiKey = "AIzaSyBjc3sAFpb-_gOPo8KqjOLrIhaZh4c_5Dg"
+            apiKey = com.example.travelapp.BuildConfig.GEMINI_API_KEY
         )
     }
 
