@@ -1,4 +1,4 @@
-package com.example.travelapp.repository
+package com.example.travelapp.domain.repository
 
 import com.example.travelapp.data.User
 import com.google.firebase.auth.FirebaseAuth

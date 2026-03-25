@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.travelapp.data.User
-import com.example.travelapp.repository.UserRepository
+import com.example.travelapp.domain.repository.UserRepository
 
 // Định nghĩa các trạng thái của quá trình xác thực
 sealed class AuthState {
