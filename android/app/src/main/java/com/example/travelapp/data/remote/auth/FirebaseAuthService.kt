@@ -1,5 +1,7 @@
 package com.example.travelapp.data.remote.auth
 
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 class FirebaseAuthService {
 
     private val auth = FirebaseAuth.getInstance()

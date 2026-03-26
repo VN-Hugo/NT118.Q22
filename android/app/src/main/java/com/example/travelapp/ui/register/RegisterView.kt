@@ -24,12 +24,13 @@ import com.example.travelapp.R
 import com.example.travelapp.ui.login.AuthState
 import com.example.travelapp.ui.login.AuthViewModel
 
+import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     onBackClick: () -> Unit,
     onRegisterSuccess: () -> Unit,
-    viewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
