@@ -64,6 +64,8 @@ dependencies {
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
+    // Navigation
     implementation("androidx.navigation:navigation-compose:2.9.7")
     //Coil
     implementation("io.coil-kt:coil-compose:2.7.0")
@@ -71,4 +73,8 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.59.2")
     ksp("com.google.dagger:hilt-android-compiler:2.59.2")
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
+    // Google
+    implementation("com.google.android.gms:play-services-auth:21.5.0")
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 }

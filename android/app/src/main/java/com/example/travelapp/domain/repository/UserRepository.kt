@@ -6,6 +6,8 @@ interface UserRepository {
 
     suspend fun loginUser(email: String, pass: String): Boolean
 
+    suspend fun signInWithGoogle(idToken: String): Boolean
+
     suspend fun registerUser(email: String, pass: String): String?
 
     suspend fun saveUser(user: User): Boolean

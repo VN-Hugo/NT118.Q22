@@ -1,6 +1,8 @@
 package com.example.travelapp.di
 
+import com.example.travelapp.data.repository.PropertyRepositoryImpl
 import com.example.travelapp.data.repository.UserRepositoryImpl
+import com.example.travelapp.domain.repository.PropertyRepository
 import com.example.travelapp.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
@@ -15,6 +17,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserRepository(
-        impl: UserRepositoryImpl
+        userRepositoryImpl: UserRepositoryImpl
     ): UserRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPropertyRepository(
+        propertyRepositoryImpl: PropertyRepositoryImpl
+    ): PropertyRepository
 }

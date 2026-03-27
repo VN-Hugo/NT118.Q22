@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack // Import thêm icon Back
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,10 +24,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.travelapp.R
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.travelapp.R
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,12 +46,33 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val authState = authViewModel.authState
-    // Xử lý khi đăng nhập thành công hoặc lỗi (Side Effect)
+
+    // Google Sign-In configuration
+    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken(context.getString(R.string.default_web_client_id))
+        .requestEmail()
+        .build()
+    val googleSignInClient = GoogleSignIn.getClient(context, gso)
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            account?.idToken?.let { idToken ->
+                authViewModel.signInWithGoogle(idToken)
+            }
+        } catch (e: ApiException) {
+            Toast.makeText(context, "Google sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Success -> {
                 onLoginSuccess()
-                authViewModel.resetState() // Reset để không bị lặp lại logic
+                authViewModel.resetState()
             }
             is AuthState.Error -> {
                 Toast.makeText(context, authState.message, Toast.LENGTH_SHORT).show()
@@ -56,8 +81,8 @@ fun LoginScreen(
             else -> {}
         }
     }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Hình nền
         Image(
             painter = painterResource(id = R.drawable.background),
             contentDescription = null,
@@ -65,7 +90,6 @@ fun LoginScreen(
             contentScale = ContentScale.Crop
         )
 
-        // 2. Lớp phủ Gradient
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -80,11 +104,10 @@ fun LoginScreen(
                 )
         )
 
-        // 3. Nút Back
         IconButton(
             onClick = onBack,
             modifier = Modifier
-                .statusBarsPadding() // Đảm bảo nút không bị đè bởi thanh pin/sóng
+                .statusBarsPadding()
                 .padding(start = 8.dp, top = 8.dp)
                 .align(Alignment.TopStart)
         ) {
@@ -96,7 +119,6 @@ fun LoginScreen(
             )
         }
 
-        // 4. Nội dung chính
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -104,10 +126,8 @@ fun LoginScreen(
                 .statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Tăng Spacer để không bị nút Back đè lên tiêu đề
             Spacer(modifier = Modifier.height(80.dp))
 
-            // Tiêu đề
             Text(
                 text = "Chào mừng\ntrở lại!",
                 fontSize = 38.sp,
@@ -123,10 +143,9 @@ fun LoginScreen(
                 color = Color.White.copy(alpha = 0.7f),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 48.dp)
+                    .padding(top = 8.dp, bottom = 32.dp)
             )
 
-            // Ô nhập Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -147,9 +166,8 @@ fun LoginScreen(
                 )
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Ô nhập Mật khẩu
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -184,7 +202,6 @@ fun LoginScreen(
                 )
             )
 
-            // Quên mật khẩu
             Text(
                 text = "Quên mật khẩu?",
                 color = Color.White,
@@ -192,22 +209,21 @@ fun LoginScreen(
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp)
-                    .clickable { /* Điều hướng Quên mật khẩu */ },
+                    .padding(top = 8.dp)
+                    .clickable { },
                 textAlign = TextAlign.End
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Nút Đăng nhập
             Button(
                 onClick = { authViewModel.login(email, password) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White) ,
-                enabled = authState !is AuthState.Loading // Vô hiệu hóa khi đang load
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                enabled = authState !is AuthState.Loading
             ) {
                 if (authState is AuthState.Loading) {
                     CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
@@ -216,9 +232,31 @@ fun LoginScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Google Login Button
+            OutlinedButton(
+                onClick = { googleSignInLauncher.launch(googleSignInClient.signInIntent) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_google),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Tiếp tục với Google", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
             Spacer(modifier = Modifier.weight(1f))
 
-            // Footer
             Row(
                 modifier = Modifier.padding(bottom = 24.dp),
                 verticalAlignment = Alignment.CenterVertically

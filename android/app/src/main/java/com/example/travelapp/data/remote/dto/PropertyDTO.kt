@@ -1,9 +1,9 @@
-package com.example.travelapp.domain.model
+package com.example.travelapp.data.remote.dto
 
-data class Property(
+data class PropertyDTO(
     val proId: String = "",
     val name: String = "",
-    val type: String = "hotel", // "hotel" hoặc "activity"
+    val type: String = "hotel",
     val desId: String = "",
     val desName: String = "",
     val address: String = "",
@@ -13,24 +13,23 @@ data class Property(
     val averageRating: Float = 0f,
     val reviewCount: Int = 0,
     val tags: List<String> = emptyList(),
-    val images: List<PropertyImage> = emptyList(),
-    // Thông tin mở rộng tùy theo type
-    val hotelInfo: HotelInfo? = null,
-    val activityInfo: ActivityInfo? = null
+    val images: List<PropertyImageDTO> = emptyList(),
+    val hotelInfo: HotelInfoDTO? = null,
+    val activityInfo: ActivityInfoDTO? = null
 )
 
-data class PropertyImage(
+data class PropertyImageDTO(
     val url: String = "",
     val isPrimary: Boolean = false
 )
 
-data class HotelInfo(
+data class HotelInfoDTO(
     val checkInTime: String = "",
     val checkOutTime: String = "",
     val policy: String = ""
 )
 
-data class ActivityInfo(
+data class ActivityInfoDTO(
     val duration: String = "",
     val maxPax: Int = 0
 )

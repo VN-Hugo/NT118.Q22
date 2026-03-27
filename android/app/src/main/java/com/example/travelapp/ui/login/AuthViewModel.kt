@@ -10,8 +10,11 @@ import androidx.compose.runtime.setValue
 
 import com.example.travelapp.domain.usecase.LoginUseCase
 import com.example.travelapp.domain.usecase.RegisterUseCase
+import com.example.travelapp.domain.usecase.SignInWithGoogleUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 sealed class AuthState {
     object Idle : AuthState()
@@ -23,7 +26,8 @@ sealed class AuthState {
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
-    private val registerUseCase: RegisterUseCase
+    private val registerUseCase: RegisterUseCase,
+    private val signInWithGoogleUseCase: SignInWithGoogleUseCase
 ) : ViewModel() {
 
     var authState by mutableStateOf<AuthState>(AuthState.Idle)
@@ -47,6 +51,18 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun signInWithGoogle(idToken: String) {
+        authState = AuthState.Loading
+        viewModelScope.launch {
+            val success = signInWithGoogleUseCase(idToken)
+            authState = if (success) {
+                AuthState.Success
+            } else {
+                AuthState.Error("Đăng nhập Google thất bại")
+            }
+        }
+    }
+
     fun signUp(email: String, pass: String, name: String) {
         authState = AuthState.Loading
 
@@ -64,4 +80,5 @@ class AuthViewModel @Inject constructor(
     fun resetState() {
         authState = AuthState.Idle
     }
+
 }
