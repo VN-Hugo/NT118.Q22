@@ -12,6 +12,7 @@ data class Property(
     val description: String = "",
     val averageRating: Float = 0f,
     val reviewCount: Int = 0,
+    val price: Double = 0.0,
     val tags: List<String> = emptyList(),
     val images: List<PropertyImage> = emptyList(),
     // Thông tin mở rộng tùy theo type
