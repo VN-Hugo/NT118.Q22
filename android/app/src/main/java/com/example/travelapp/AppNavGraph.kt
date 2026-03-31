@@ -1,6 +1,6 @@
 package com.example.travelapp
 
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -8,6 +8,9 @@ import com.example.travelapp.ui.login.LoginScreen
 import com.example.travelapp.ui.login.WelcomeScreen
 import com.example.travelapp.ui.register.RegisterScreen
 import com.example.travelapp.ui.dashboard.MainDashboardContainer
+import com.example.travelapp.ui.owner.OwnerDashboardContainer
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 // Quản lý Route tập trung
 object Routes {
@@ -18,10 +21,31 @@ object Routes {
 
     // Luồng trong (Main app)
     const val MAIN_DASHBOARD = "main_dashboard"
+    const val OWNER_DASHBOARD = "owner_dashboard"
 }
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
+    // Logic đơn giản để xác định Dashboard dựa trên Role (Thực tế nên nằm trong ViewModel)
+    fun navigateToDashboard() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid != null) {
+            FirebaseFirestore.getInstance().collection("Users").document(uid).get()
+                .addOnSuccessListener { document ->
+                    val role = document.getString("role") ?: "USER"
+                    if (role == "HOTEL_OWNER") {
+                        navController.navigate(Routes.OWNER_DASHBOARD) {
+                            popUpTo(Routes.WELCOME) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.MAIN_DASHBOARD) {
+                            popUpTo(Routes.WELCOME) { inclusive = true }
+                        }
+                    }
+                }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = Routes.WELCOME
@@ -31,12 +55,7 @@ fun AppNavGraph(navController: NavHostController) {
             WelcomeScreen(
                 onNavigateToLogin = { navController.navigate(Routes.LOGIN) },
                 onNavigateToRegister = { navController.navigate(Routes.REGISTER) },
-                onLoginSuccess = {
-                    // Khi login bằng Google thành công từ Welcome
-                    navController.navigate(Routes.MAIN_DASHBOARD) {
-                        popUpTo(Routes.WELCOME) { inclusive = true }
-                    }
-                }
+                onLoginSuccess = { navigateToDashboard() }
             )
         }
 
@@ -44,12 +63,7 @@ fun AppNavGraph(navController: NavHostController) {
         composable(Routes.LOGIN) {
             LoginScreen(
                 onBack = { navController.popBackStack() },
-                onLoginSuccess = {
-                    // Khi login thành công, nhảy vào Dashboard và xóa sạch lịch sử Auth
-                    navController.navigate(Routes.MAIN_DASHBOARD) {
-                        popUpTo(Routes.WELCOME) { inclusive = true }
-                    }
-                },
+                onLoginSuccess = { navigateToDashboard() },
                 onNavigateToRegister = { navController.navigate(Routes.REGISTER) }
             )
         }
@@ -66,10 +80,14 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        // 4. Cụm Dashboard (Chứa Bottom Bar và các tab Home, Profile...)
+        // 4. Cụm Dashboard cho Người dùng (Traveler)
         composable(Routes.MAIN_DASHBOARD) {
-            // Chúng ta truyền navController gốc vào để Dashboard có thể gọi lệnh Logout
             MainDashboardContainer(rootNavController = navController)
+        }
+
+        // 5. Cụm Dashboard cho Chủ khách sạn (Owner)
+        composable(Routes.OWNER_DASHBOARD) {
+            OwnerDashboardContainer(rootNavController = navController)
         }
     }
 }

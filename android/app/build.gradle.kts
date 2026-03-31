@@ -74,7 +74,7 @@ dependencies {
     ksp("com.google.dagger:hilt-android-compiler:2.59.2")
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
     // Google
-    implementation("com.google.android.gms:play-services-auth:21.5.0")
+    implementation("com.google.android.gms:play-services-auth:21.5.1")
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 }
