@@ -9,8 +9,6 @@ import com.example.travelapp.ui.login.WelcomeScreen
 import com.example.travelapp.ui.register.RegisterScreen
 import com.example.travelapp.ui.dashboard.MainDashboardContainer
 import com.example.travelapp.ui.owner.OwnerDashboardContainer
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 // Quản lý Route tập trung
 object Routes {
@@ -26,23 +24,16 @@ object Routes {
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
-    // Logic đơn giản để xác định Dashboard dựa trên Role (Thực tế nên nằm trong ViewModel)
-    fun navigateToDashboard() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid != null) {
-            FirebaseFirestore.getInstance().collection("Users").document(uid).get()
-                .addOnSuccessListener { document ->
-                    val role = document.getString("role") ?: "USER"
-                    if (role == "HOTEL_OWNER") {
-                        navController.navigate(Routes.OWNER_DASHBOARD) {
-                            popUpTo(Routes.WELCOME) { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate(Routes.MAIN_DASHBOARD) {
-                            popUpTo(Routes.WELCOME) { inclusive = true }
-                        }
-                    }
-                }
+    
+    fun navigateByRole(role: String) {
+        if (role == "HOTEL_OWNER") {
+            navController.navigate(Routes.OWNER_DASHBOARD) {
+                popUpTo(Routes.WELCOME) { inclusive = true }
+            }
+        } else {
+            navController.navigate(Routes.MAIN_DASHBOARD) {
+                popUpTo(Routes.WELCOME) { inclusive = true }
+            }
         }
     }
 
@@ -55,7 +46,7 @@ fun AppNavGraph(navController: NavHostController) {
             WelcomeScreen(
                 onNavigateToLogin = { navController.navigate(Routes.LOGIN) },
                 onNavigateToRegister = { navController.navigate(Routes.REGISTER) },
-                onLoginSuccess = { navigateToDashboard() }
+                onLoginSuccess = { role -> navigateByRole(role) }
             )
         }
 
@@ -63,7 +54,7 @@ fun AppNavGraph(navController: NavHostController) {
         composable(Routes.LOGIN) {
             LoginScreen(
                 onBack = { navController.popBackStack() },
-                onLoginSuccess = { navigateToDashboard() },
+                onLoginSuccess = { role -> navigateByRole(role) },
                 onNavigateToRegister = { navController.navigate(Routes.REGISTER) }
             )
         }

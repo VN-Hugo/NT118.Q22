@@ -32,7 +32,7 @@ import com.google.android.gms.common.api.ApiException
 fun WelcomeScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToRegister: () -> Unit,
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (String) -> Unit, // Updated to pass role
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -62,7 +62,7 @@ fun WelcomeScreen(
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Success -> {
-                onLoginSuccess()
+                onLoginSuccess(authState.role) // Pass the role
                 authViewModel.resetState()
             }
             is AuthState.Error -> {
@@ -147,7 +147,7 @@ fun WelcomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 SocialButton(
-                    iconRes = R.drawable.ic_apple, // Giữ icon apple nhưng đổi text thành Facebook như yêu cầu
+                    iconRes = R.drawable.ic_apple,
                     text = "Facebook",
                     modifier = Modifier.weight(1f),
                     onClick = { /* Xử lý Facebook ở đây nếu cần */ }

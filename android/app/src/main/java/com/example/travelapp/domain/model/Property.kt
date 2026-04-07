@@ -2,6 +2,7 @@ package com.example.travelapp.domain.model
 
 data class Property(
     val proId: String = "",
+    val ownerId: String = "", // Thêm trường này
     val name: String = "",
     val type: String = "hotel", // "hotel" hoặc "activity"
     val desId: String = "",

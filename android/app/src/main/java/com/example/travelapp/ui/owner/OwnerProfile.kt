@@ -18,9 +18,9 @@ import androidx.compose.ui.unit.sp
 import com.example.travelapp.ui.components.HotelBottomBar
 
 // Bảng màu đồng bộ với thiết kế
-private val TealPrimary = Color(0xFF004D40)
-private val CardGray = Color(0xFFF1F3F4)
-private val VisaDark = Color(0xFF1A1F24)
+private val TealPrimaryColor = Color(0xFF004D40)
+private val CardGrayColor = Color(0xFFF1F3F4)
+private val VisaDarkColor = Color(0xFF1A1F24)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,8 +30,8 @@ fun OwnerProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Icon(imageVector = Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp), tint = TealPrimary) },
-                actions = { IconButton(onClick = {}) { Icon(Icons.Default.Notifications, null, tint = TealPrimary) } }
+                title = { Icon(imageVector = Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp), tint = TealPrimaryColor) },
+                actions = { IconButton(onClick = {}) { Icon(Icons.Default.Notifications, null, tint = TealPrimaryColor) } }
             )
         },
         bottomBar = {
@@ -48,7 +48,7 @@ fun OwnerProfileScreen(
         ) {
             item {
                 Column(Modifier.padding(vertical = 8.dp)) {
-                    Text("Hồ sơ & Cài đặt", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = TealPrimary)
+                    Text("Hồ sơ & Cài đặt", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = TealPrimaryColor)
                     Text("Quản lý tài khoản cá nhân và thông tin vận hành...", fontSize = 13.sp, color = Color.Gray)
                 }
             }
@@ -81,13 +81,13 @@ fun OwnerProfileScreen(
             // 6. Nút Đăng xuất
             item {
                 OutlinedButton(
-                    onClick = { /* Logout */ },
+                    onClick = { onNavigate("logout") },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
                     border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Icon(Icons.Default.Close, null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.ExitToApp, null, modifier = Modifier.size(18.dp))
                     Text("  Đăng xuất tài khoản", fontWeight = FontWeight.Bold)
                 }
             }
@@ -102,7 +102,7 @@ fun ProfileInfoCard() {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(contentAlignment = Alignment.BottomEnd) {
                     Box(Modifier.size(80.dp).background(Color.LightGray, CircleShape)) // Avatar
-                    Box(Modifier.size(24.dp).background(TealPrimary, CircleShape).border(2.dp, Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(24.dp).background(TealPrimaryColor, CircleShape).border(2.dp, Color.White, CircleShape), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Edit, null, tint = Color.White, modifier = Modifier.size(12.dp))
                     }
                 }
@@ -116,7 +116,7 @@ fun ProfileInfoCard() {
             Button(
                 onClick = {},
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+                colors = ButtonDefaults.buttonColors(containerColor = TealPrimaryColor),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text("Lưu thay đổi", fontWeight = FontWeight.Bold)
@@ -133,7 +133,7 @@ fun ProfileInfoCard() {
 fun BusinessInfoCard() {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Person, null, tint = TealPrimary)
+            Icon(Icons.Default.Person, null, tint = TealPrimaryColor)
             Text("  Thông tin doanh nghiệp", fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(8.dp))
@@ -145,19 +145,19 @@ fun BusinessInfoCard() {
                         Text("Mã số thuế: 010123456789", fontSize = 12.sp, color = Color.Gray)
                     }
                     Surface(color = Color(0xFFE0F2F1), shape = CircleShape) {
-                        Text("ĐÃ XÁC MINH", fontSize = 9.sp, color = TealPrimary, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                        Text("ĐÃ XÁC MINH", fontSize = 9.sp, color = TealPrimaryColor, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Surface(color = CardGray, shape = RoundedCornerShape(12.dp)) {
+                Surface(color = CardGrayColor, shape = RoundedCornerShape(12.dp)) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.LocationOn, null, tint = TealPrimary, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.LocationOn, null, tint = TealPrimaryColor, modifier = Modifier.size(18.dp))
                         Text(" 123 Đường Lê Lợi, Quận 1, TP. HCM", fontSize = 12.sp)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
                 // Gói dịch vụ Card
-                Surface(color = TealPrimary, shape = RoundedCornerShape(12.dp)) {
+                Surface(color = TealPrimaryColor, shape = RoundedCornerShape(12.dp)) {
                     Column(Modifier.padding(16.dp).fillMaxWidth()) {
                         Text("GÓI DỊCH VỤ", fontSize = 10.sp, color = Color.White.copy(0.7f))
                         Text("Elite Concierge", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -181,10 +181,10 @@ fun PaymentMethodCard() {
             Icon(Icons.Default.Person, null)
         }
         Spacer(Modifier.height(8.dp))
-        Card(colors = CardDefaults.cardColors(containerColor = VisaDark), shape = RoundedCornerShape(16.dp)) {
+        Card(colors = CardDefaults.cardColors(containerColor = VisaDarkColor), shape = RoundedCornerShape(16.dp)) {
             Column(Modifier.padding(20.dp).fillMaxWidth()) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Icon(Icons.Default.Person, null, tint = Color.White)
+                    Icon(Icons.Default.Info, null, tint = Color.White)
                     Text("VISA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 }
                 Spacer(Modifier.height(24.dp))
@@ -209,7 +209,7 @@ fun TransactionHistoryCard() {
             Text("Lịch sử giao dịch", fontWeight = FontWeight.Bold)
             TransactionItem("Phí dịch vụ Tháng 10", "15/10/2023", "-2,500,000đ")
             TransactionItem("Dịch vụ AI Curator", "02/10/2023", "-500,000đ")
-            TextButton(onClick = {}) { Text("Xem tất cả hoá đơn →", fontSize = 12.sp, color = TealPrimary) }
+            TextButton(onClick = {}) { Text("Xem tất cả hoá đơn →", fontSize = 12.sp, color = TealPrimaryColor) }
         }
     }
 }
@@ -217,7 +217,7 @@ fun TransactionHistoryCard() {
 @Composable
 fun TransactionItem(title: String, date: String, amount: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(36.dp).background(CardGray, CircleShape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(36.dp).background(CardGrayColor, CircleShape), contentAlignment = Alignment.Center) {
             Icon(Icons.Default.Person, null, modifier = Modifier.size(18.dp), tint = Color.Gray)
         }
         Spacer(Modifier.width(12.dp))
@@ -234,7 +234,7 @@ fun InputField(label: String, value: String) {
     Column(Modifier.padding(vertical = 8.dp)) {
         Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
         Spacer(Modifier.height(4.dp))
-        Surface(color = CardGray, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+        Surface(color = CardGrayColor, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
             Text(value, modifier = Modifier.padding(12.dp), fontSize = 14.sp)
         }
     }
@@ -243,13 +243,13 @@ fun InputField(label: String, value: String) {
 @Composable
 fun AiSuggestionFooter() {
     Surface(
-        color = TealPrimary,
+        color = TealPrimaryColor,
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(40.dp).background(Color.White.copy(0.1f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Person, null, tint = Color.White)
+                Icon(Icons.Default.Star, null, tint = Color.White)
             }
             Spacer(Modifier.width(12.dp))
             Column {

@@ -7,27 +7,36 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope // Import cái này
 import androidx.navigation.compose.rememberNavController
+import com.example.travelapp.data.remote.FirebaseMockData // Import cái này
 import com.example.travelapp.ui.theme.TravelAppTheme
 import dagger.hilt.android.AndroidEntryPoint
-
+import kotlinx.coroutines.launch // Import cái này
+import javax.inject.Inject // Import cái này
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+//    // 1. Inject FirebaseMockData vào đây
+//    @Inject lateinit var firebaseMockData: FirebaseMockData
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+//        // 2. Chạy hàm tạo dữ liệu mẫu trong Coroutine Scope
+//        // Bạn chỉ cần chạy dòng này MỘT LẦN DUY NHẤT rồi có thể xóa đi hoặc comment lại
+//        lifecycleScope.launch {
+//            firebaseMockData.createMockData()
+//        }
+
         setContent {
             TravelAppTheme {
-                // Surface là cái nền của ứng dụng
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // 1. Khởi tạo navController để quản lý việc chuyển màn
                     val navController = rememberNavController()
-
-                    // 2. Gọi AppNavGraph (file bạn đã tách riêng) để điều hướng
                     AppNavGraph(navController = navController)
                 }
             }
