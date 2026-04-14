@@ -15,71 +15,63 @@ import com.example.travelapp.ui.components.HotelBottomBar
 
 @Composable
 fun OwnerDashboardContainer(rootNavController: NavHostController) {
-    // NavController riêng cho các tab của Owner
     val internalNavController = rememberNavController()
     val navBackStackEntry by internalNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
 
     Scaffold(
         bottomBar = {
-            HotelBottomBar(
-                currentRoute = currentRoute,
-                onNavigate = { targetRoute ->
-                    internalNavController.navigate(targetRoute) {
-                        // Tránh tạo nhiều instance của cùng một màn hình khi nhấn tab liên tục
-                        popUpTo(internalNavController.graph.startDestinationId) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
+            // Chỉ hiển thị BottomBar ở các màn hình chính (Tab)
+            val showBottomBar = currentRoute in listOf("dashboard", "hotels", "bookings", "analytics", "profile")
+            if (showBottomBar) {
+                HotelBottomBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { targetRoute ->
+                        internalNavController.navigate(targetRoute) {
+                            popUpTo(internalNavController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     ) { paddingValues ->
-        // NavHost nội bộ cho luồng quản lý của Owner
         NavHost(
             navController = internalNavController,
             startDestination = "dashboard",
             modifier = Modifier.padding(paddingValues)
         ) {
-            // Tab 1: Tổng quan (Dashboard)
-            composable("dashboard") {
-                OwnerDashboardScreen()
-            }
+            composable("dashboard") { OwnerDashboardScreen() }
 
-            // Tab 2: Quản lý khách sạn & Phòng
+            // Tab 2: Quản lý danh sách khách sạn
             composable("hotels") {
-                RoomManagementScreen()
-            }
-
-            // Tab 3: Quản lý đặt phòng
-            composable("bookings") {
-                BookingManagementScreen()
-            }
-
-            // Tab 4: Phân tích & Đánh giá (Analytics/Reviews)
-            composable("analytics") {
-                ReviewScreen(onNavigate = { route -> internalNavController.navigate(route) })
-            }
-
-            // Tab 5: Hồ sơ chủ sở hữu
-            composable("profile") {
-                OwnerProfileScreen(
-                    onNavigate = { route ->
-                        if (route == "logout") {
-                            // Logic logout thực tế nên được gọi ở đây hoặc trong ViewModel
-                            rootNavController.navigate(Routes.WELCOME) {
-                                popUpTo(Routes.MAIN_DASHBOARD) { inclusive = true }
-                            }
-                        } else {
-                            internalNavController.navigate(route)
-                        }
-                    }
+                HotelManagementScreen(
+                    onAddHotelClick = { internalNavController.navigate("add_hotel") },
+                    onManageRoomsClick = { proId -> internalNavController.navigate("room_mgmt/$proId") }
                 )
             }
 
-            // Màn hình chi tiết đặt phòng (Navigation nội bộ)
-            composable("booking_detail") {
-                BookingDetailScreen(onNavigate = { internalNavController.popBackStack() })
+            // Màn hình Thêm khách sạn (Fullscreen)
+            composable("add_hotel") {
+                AddHotelScreen(
+                    onBack = { internalNavController.popBackStack() },
+                    onSuccess = { internalNavController.popBackStack() }
+                )
+            }
+
+            // Màn hình Quản lý phòng của từng khách sạn
+            composable("room_mgmt/{proId}") {
+                RoomManagementScreen() // Sau này sẽ truyền proId vào ViewModel của màn hình này
+            }
+
+            composable("bookings") { BookingManagementScreen() }
+            composable("analytics") { ReviewScreen(onNavigate = { internalNavController.navigate(it) }) }
+            composable("profile") {
+                OwnerProfileScreen(onNavigate = { 
+                    if (it == "logout") rootNavController.navigate(Routes.WELCOME) { popUpTo(0) }
+                    else internalNavController.navigate(it)
+                })
             }
         }
     }

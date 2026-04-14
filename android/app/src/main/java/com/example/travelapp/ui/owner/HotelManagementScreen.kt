@@ -4,47 +4,39 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-data class Hotel(
-    val name: String,
-    val location: String,
-    val rating: Double,
-    val status: String,
-    val isActive: Boolean = true,
-    val staffCount: Int
-)
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.example.travelapp.domain.model.Property
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HotelManagementScreen() {
-    val hotelList = listOf(
-        Hotel("The Azure Palace", "Đà Nẵng, Việt Nam", 4.9, "HOẠT ĐỘNG", true, 5),
-        Hotel("Heritage Grand Hotel", "Hà Nội, Việt Nam", 4.7, "HOẠT ĐỘNG", true, 12),
-        Hotel("Urban Vista Suites", "TP. Hồ Chí Minh, Việt Nam", 4.2, "NGỪNG HOẠT ĐỘNG", false, 0),
-        Hotel("The Serene Cove", "Phú Quốc, Việt Nam", 5.0, "HOẠT ĐỘNG", true, 2)
-    )
+fun HotelManagementScreen(
+    onAddHotelClick: () -> Unit,
+    onManageRoomsClick: (String) -> Unit,
+    viewModel: HotelManagementViewModel = hiltViewModel()
+) {
+    val hotelState by viewModel.hotelState.collectAsState()
 
     Scaffold(
         containerColor = Color(0xFFF8F9FA),
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { /* Điều hướng tới màn hình Thêm khách sạn */ },
+                onClick = onAddHotelClick,
                 containerColor = Color(0xFF005D67), // BrandTeal
                 contentColor = Color.White,
                 shape = RoundedCornerShape(12.dp)
@@ -54,75 +46,101 @@ fun HotelManagementScreen() {
                 Text("Thêm khách sạn mới", fontWeight = FontWeight.Bold)
             }
         },
-
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("DANH SÁCH SỞ HỮU", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
-                Text("Quản lý khách sạn", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color(0xFF005D67))
-
-                Spacer(modifier = Modifier.height(16.dp))
-                AIInsightBanner()
-                Spacer(modifier = Modifier.height(8.dp))
+        when (val state = hotelState) {
+            is HotelManagementState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF005D67))
+                }
             }
+            is HotelManagementState.Success -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("DANH SÁCH SỞ HỮU", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                        Text("Quản lý khách sạn", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color(0xFF005D67))
 
-            items(hotelList) { hotel ->
-                HotelManagementCard(hotel)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        QuoteBanner()
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    if (state.hotels.isEmpty()) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                                Text("Bạn chưa đăng ký khách sạn nào.", color = Color.Gray)
+                            }
+                        }
+                    } else {
+                        items(state.hotels) { hotel ->
+                            HotelManagementCard(hotel, onClick = { onManageRoomsClick(hotel.proId) })
+                        }
+                    }
+
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
+                }
             }
-
-            item { Spacer(modifier = Modifier.height(80.dp)) }
+            is HotelManagementState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Lỗi: ${state.message}", color = Color.Red)
+                }
+            }
         }
     }
 }
 
 @Composable
-fun AIInsightBanner() {
+fun QuoteBanner() {
     Surface(
-        color = Color(0xFF005D67),
+        color = Color(0xFFE0F2F1),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text("AI Insight", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Text(
-                    "Tỷ lệ lấp đầy trung bình tăng 12% so với tháng trước tại các cơ sở ven biển.",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 12.sp
-                )
-            }
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF005D67))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                "\"Dịch vụ khách hàng tốt không chỉ là giải quyết vấn đề, mà là tạo ra những kỷ niệm đáng nhớ.\"",
+                color = Color(0xFF005D67),
+                fontSize = 14.sp,
+                fontStyle = FontStyle.Italic,
+                lineHeight = 20.sp
+            )
         }
     }
 }
 
 @Composable
-fun HotelManagementCard(hotel: Hotel) {
+fun HotelManagementCard(hotel: Property, onClick: () -> Unit) {
     Surface(
         color = Color.White,
         shape = RoundedCornerShape(20.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shadowElevation = 2.dp
     ) {
         Column {
-            // Phần ảnh phía trên
             Box(modifier = Modifier.fillMaxWidth().height(180.dp)) {
-                // Placeholder Image (Dùng Box màu xám nếu chưa có ảnh thực)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(if (hotel.isActive) Color.LightGray else Color(0xFFE0E0E0))
-                )
+                val imageUrl = hotel.images.firstOrNull { it.isPrimary }?.url ?: hotel.images.firstOrNull()?.url
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else {
+                    Box(modifier = Modifier.fillMaxSize().background(Color.LightGray))
+                }
 
-                // Rating Badge
                 Surface(
                     color = Color.White,
                     shape = RoundedCornerShape(12.dp),
@@ -130,18 +148,29 @@ fun HotelManagementCard(hotel: Hotel) {
                 ) {
                     Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFB400), modifier = Modifier.size(14.dp))
-                        Text("${hotel.rating}", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("${hotel.averageRating}", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
-                // Status Badge
+                // Trạng thái duyệt
+                val statusColor = when(hotel.status) {
+                    "APPROVED" -> Color(0xFF004D40)
+                    "REJECTED" -> Color.Red
+                    else -> Color(0xFFFF9800) // PENDING
+                }
+                val statusText = when(hotel.status) {
+                    "APPROVED" -> "HOẠT ĐỘNG"
+                    "REJECTED" -> "BỊ TỪ CHỐI"
+                    else -> "CHỜ DUYỆT"
+                }
+
                 Surface(
-                    color = if (hotel.isActive) Color(0xFF004D40) else Color(0xFF757575),
+                    color = statusColor,
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.padding(12.dp).align(Alignment.BottomStart)
                 ) {
                     Text(
-                        hotel.status,
+                        statusText,
                         color = Color.White,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
@@ -150,12 +179,11 @@ fun HotelManagementCard(hotel: Hotel) {
                 }
             }
 
-            // Phần thông tin phía dưới
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(hotel.name, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF003339))
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                     Icon(Icons.Default.LocationOn, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
-                    Text(hotel.location, fontSize = 12.sp, color = Color.Gray)
+                    Text(hotel.address, fontSize = 12.sp, color = Color.Gray)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -165,39 +193,18 @@ fun HotelManagementCard(hotel: Hotel) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Staff Avatars (Simulated)
-                    Row {
-                        repeat(minOf(hotel.staffCount, 3)) {
-                            Box(
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .border(2.dp, Color.White, CircleShape)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFE0F2F1))
-                            )
-                        }
-                        if (hotel.staffCount > 3) {
-                            Text("+${hotel.staffCount - 3}", fontSize = 10.sp, modifier = Modifier.padding(start = 4.dp).align(Alignment.CenterVertically))
-                        }
-                    }
-
-                    // Action Button
-                    TextButton(onClick = {}) {
-                        Text(
-                            if (hotel.isActive) "Chi tiết >" else "Quản lý ⚙",
-                            color = Color.Black,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp
-                        )
+                    Text(
+                        text = "Giá từ: đ${String.format(Locale.getDefault(), "%,.0f", hotel.price)}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF005D67)
+                    )
+                    
+                    TextButton(onClick = onClick) {
+                        Text("Quản lý phòng >", color = Color.Black, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     }
                 }
             }
         }
     }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun HotelManagementPreview() {
-    HotelManagementScreen()
 }

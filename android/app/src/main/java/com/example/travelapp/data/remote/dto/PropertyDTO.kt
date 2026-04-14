@@ -2,6 +2,7 @@ package com.example.travelapp.data.remote.dto
 
 data class PropertyDTO(
     val proId: String = "",
+    val ownerId: String = "", // Thêm trường này
     val name: String = "",
     val type: String = "hotel",
     val desId: String = "",
@@ -12,6 +13,7 @@ data class PropertyDTO(
     val description: String = "",
     val averageRating: Float = 0f,
     val reviewCount: Int = 0,
+    val status: String = "PENDING", // Thêm trường này
     val tags: List<String> = emptyList(),
     val images: List<PropertyImageDTO> = emptyList(),
     val hotelInfo: HotelInfoDTO? = null,

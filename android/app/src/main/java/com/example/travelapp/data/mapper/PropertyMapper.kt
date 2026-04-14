@@ -6,6 +6,7 @@ import com.example.travelapp.domain.model.*
 fun PropertyDTO.toDomain(): Property {
     return Property(
         proId = proId,
+        ownerId = ownerId,
         name = name,
         type = type,
         desId = desId,
@@ -16,6 +17,7 @@ fun PropertyDTO.toDomain(): Property {
         description = description,
         averageRating = averageRating,
         reviewCount = reviewCount,
+        status = status,
         tags = tags,
         images = images.map { it.toDomain() },
         hotelInfo = hotelInfo?.toDomain(),
@@ -48,6 +50,7 @@ fun ActivityInfoDTO.toDomain(): ActivityInfo {
 fun Property.toDTO(): PropertyDTO {
     return PropertyDTO(
         proId = proId,
+        ownerId = ownerId,
         name = name,
         type = type,
         desId = desId,
@@ -58,6 +61,7 @@ fun Property.toDTO(): PropertyDTO {
         description = description,
         averageRating = averageRating,
         reviewCount = reviewCount,
+        status = status,
         tags = tags,
         images = images.map { it.toDTO() },
         hotelInfo = hotelInfo?.toDTO(),
