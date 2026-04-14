@@ -11,15 +11,15 @@ import androidx.compose.runtime.setValue
 import com.example.travelapp.domain.usecase.LoginUseCase
 import com.example.travelapp.domain.usecase.RegisterUseCase
 import com.example.travelapp.domain.usecase.SignInWithGoogleUseCase
+import com.example.travelapp.domain.repository.UserRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
 
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
-    object Success : AuthState()
+    data class Success(val role: String) : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -27,7 +27,8 @@ sealed class AuthState {
 class AuthViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
     private val registerUseCase: RegisterUseCase,
-    private val signInWithGoogleUseCase: SignInWithGoogleUseCase
+    private val signInWithGoogleUseCase: SignInWithGoogleUseCase,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     var authState by mutableStateOf<AuthState>(AuthState.Idle)
@@ -43,10 +44,10 @@ class AuthViewModel @Inject constructor(
 
         viewModelScope.launch {
             val success = loginUseCase(email, pass)
-            authState = if (success) {
-                AuthState.Success
+            if (success) {
+                fetchRoleAndSuccess()
             } else {
-                AuthState.Error("Email hoặc mật khẩu không đúng")
+                authState = AuthState.Error("Email hoặc mật khẩu không đúng")
             }
         }
     }
@@ -55,11 +56,21 @@ class AuthViewModel @Inject constructor(
         authState = AuthState.Loading
         viewModelScope.launch {
             val success = signInWithGoogleUseCase(idToken)
-            authState = if (success) {
-                AuthState.Success
+            if (success) {
+                fetchRoleAndSuccess()
             } else {
-                AuthState.Error("Đăng nhập Google thất bại")
+                authState = AuthState.Error("Đăng nhập Google thất bại")
             }
+        }
+    }
+
+    private suspend fun fetchRoleAndSuccess() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid != null) {
+            val user = userRepository.getUserProfile(uid)
+            authState = AuthState.Success(user?.role ?: "USER")
+        } else {
+            authState = AuthState.Error("Không tìm thấy thông tin phiên đăng nhập")
         }
     }
 
@@ -68,11 +79,11 @@ class AuthViewModel @Inject constructor(
 
         viewModelScope.launch {
             val success = registerUseCase(email, pass, name)
-
-            authState = if (success) {
-                AuthState.Success
+            if (success != null) {
+                // Sau khi đăng ký, mặc định role là USER
+                authState = AuthState.Success("USER")
             } else {
-                AuthState.Error("Đăng ký thất bại")
+                authState = AuthState.Error("Đăng ký thất bại")
             }
         }
     }
@@ -80,5 +91,4 @@ class AuthViewModel @Inject constructor(
     fun resetState() {
         authState = AuthState.Idle
     }
-
 }

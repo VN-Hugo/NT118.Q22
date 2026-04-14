@@ -1,68 +1,173 @@
 package com.example.travelapp.ui.dashboard
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.example.travelapp.domain.model.User
 
 @Composable
-fun ProfileScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .verticalScroll(rememberScrollState())
-    ) {
-        // Top Bar Icons
-        Row(
+fun ProfileScreen(
+    onLogoutSuccess: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
+    val profileState by viewModel.profileState.collectAsState()
+    val isUploading by viewModel.isUploading.collectAsState()
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.uploadAvatar(it) }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .fillMaxSize()
+                .background(Color.White)
+                .verticalScroll(rememberScrollState())
         ) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-            Text("Profile", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Icon(Icons.Default.MoreVert, contentDescription = "More")
+            // Top Bar Icons
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    modifier = Modifier.clickable { /* Handle back */ }
+                )
+                Text("Profile", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Icon(Icons.Default.MoreVert, contentDescription = "More")
+            }
+
+            when (val state = profileState) {
+                is ProfileState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is ProfileState.Success -> {
+                    ProfileContent(
+                        user = state.user,
+                        onLogoutClick = { viewModel.logout(onLogoutSuccess) },
+                        onEditAvatarClick = { launcher.launch("image/*") }
+                    )
+                }
+                is ProfileState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(state.message, color = Color.Red)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(50.dp))
         }
 
+        if (isUploading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color.White)
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileContent(
+    user: User,
+    onLogoutClick: () -> Unit,
+    onEditAvatarClick: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         // Header Section (Avatar & Name)
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(contentAlignment = Alignment.BottomEnd) {
-                // Giả lập ảnh Avatar
-                Box(
-                    modifier = Modifier
-                        .size(140.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFE0E0E0))
-                        .border(4.dp, Color.White, CircleShape)
-                )
-                // Nút Edit (Bút chì xanh)
+                // Avatar
+                if (user.avatarUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = user.avatarUrl,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .size(140.dp)
+                            .clip(CircleShape)
+                            .border(4.dp, Color.White, CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(140.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE0E0E0))
+                            .border(4.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(60.dp),
+                            tint = Color.Gray
+                        )
+                    }
+                }
+
+                // Edit Button
                 Surface(
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clickable { onEditAvatarClick() },
                     shape = CircleShape,
                     color = Color(0xFF2196F3),
                     border = BorderStroke(2.dp, Color.White)
                 ) {
                     Icon(
                         Icons.Default.Edit,
-                        contentDescription = null,
+                        contentDescription = "Edit Avatar",
                         tint = Color.White,
                         modifier = Modifier.padding(8.dp)
                     )
@@ -70,9 +175,13 @@ fun ProfileScreen() {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Alex Johnson", fontSize = 26.sp, fontWeight = FontWeight.Bold)
             Text(
-                "Premium Member • Global Explorer",
+                user.fullName.ifEmpty { "User Name" },
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                user.email,
                 fontSize = 15.sp,
                 color = Color(0xFF2196F3),
                 fontWeight = FontWeight.Medium
@@ -81,7 +190,7 @@ fun ProfileScreen() {
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        // Stats Row (Trips, Countries, Miles)
+        // Stats Row (Trips, Countries, Miles) - Keep static for now
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -98,14 +207,14 @@ fun ProfileScreen() {
         // Sections
         SectionTitle("TRAVEL ACTIVITY")
         ProfileMenuItem(
-            icon = Icons.Default.Favorite, // Wishlist icon
+            icon = Icons.Default.Favorite,
             title = "Wishlist",
             subtitle = "8 saved destinations",
             iconBgColor = Color(0xFFE3F2FD),
             iconColor = Color(0xFF2196F3)
         )
         ProfileMenuItem(
-            icon = Icons.Outlined.Place, // Icon bản đồ/lịch sử
+            icon = Icons.Outlined.Place,
             title = "Travel History",
             subtitle = "Past bookings and itineraries",
             iconBgColor = Color(0xFFE1F5FE),
@@ -131,9 +240,7 @@ fun ProfileScreen() {
         )
 
         // Logout Button
-        LogoutButton()
-
-        Spacer(modifier = Modifier.height(50.dp))
+        LogoutButton(onClick = onLogoutClick)
     }
 }
 
@@ -185,7 +292,12 @@ fun ProfileMenuItem(
             shape = RoundedCornerShape(14.dp),
             color = iconBgColor
         ) {
-            Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.padding(14.dp))
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.padding(14.dp)
+            )
         }
 
         Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
@@ -193,25 +305,34 @@ fun ProfileMenuItem(
             Text(subtitle, fontSize = 13.sp, color = Color.Gray)
         }
 
-        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.LightGray)
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = Color.LightGray
+        )
     }
 }
 
 @Composable
-fun LogoutButton() {
+fun LogoutButton(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { }
+            .clickable { onClick() }
             .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
-            modifier = Modifier.size(52.dp).padding(start = 0.dp),
+            modifier = Modifier.size(52.dp),
             shape = RoundedCornerShape(14.dp),
             color = Color(0xFFFFEBEE)
         ) {
-            Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Color.Red, modifier = Modifier.padding(14.dp))
+            Icon(
+                Icons.AutoMirrored.Filled.ExitToApp,
+                contentDescription = null,
+                tint = Color.Red,
+                modifier = Modifier.padding(14.dp)
+            )
         }
         Text(
             "Logout",
@@ -221,10 +342,4 @@ fun LogoutButton() {
             fontSize = 17.sp
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ProfilePreview() {
-        ProfileScreen()
 }

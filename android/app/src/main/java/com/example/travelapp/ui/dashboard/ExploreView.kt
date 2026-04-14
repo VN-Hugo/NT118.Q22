@@ -26,6 +26,7 @@ import com.example.travelapp.domain.model.Property
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExploreScreen(
+    onPropertyClick: (String) -> Unit,
     viewModel: ExploreViewModel = hiltViewModel()
 ) {
     val exploreState by viewModel.exploreState.collectAsState()
@@ -107,7 +108,7 @@ fun ExploreScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(state.properties) { property ->
-                            PropertyCard(property)
+                            PropertyCard(property, onClick = { onPropertyClick(property.proId) })
                         }
                     }
                 }
@@ -139,12 +140,12 @@ fun FilterChipItem(text: String, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun PropertyCard(property: Property) {
+fun PropertyCard(property: Property, onClick: () -> Unit) {
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp),
-        modifier = Modifier.fillMaxWidth().clickable { /* Navigate to detail */ }
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
         Column {
             Box(modifier = Modifier.height(150.dp).fillMaxWidth()) {
@@ -193,7 +194,7 @@ fun PropertyCard(property: Property) {
                 Text(property.desName, color = Color.Gray, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row {
-                    Text(text = "đ-", fontWeight = FontWeight.ExtraBold, color = Color.Black)
+                    Text(text = "đ${String.format("%,.0f", property.price)}", fontWeight = FontWeight.ExtraBold, color = Color.Black)
                     Text(text = if(property.type == "hotel") "/đêm" else "/vé", color = Color.Gray, fontSize = 11.sp)
                 }
             }

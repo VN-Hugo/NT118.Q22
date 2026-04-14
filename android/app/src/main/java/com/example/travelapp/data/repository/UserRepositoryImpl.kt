@@ -1,5 +1,6 @@
 package com.example.travelapp.data.repository
 
+import android.net.Uri
 import com.example.travelapp.data.remote.dto.UserDTO
 import com.example.travelapp.data.mapper.toDTO
 import com.example.travelapp.data.mapper.toDomain
@@ -8,6 +9,7 @@ import com.example.travelapp.domain.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -15,6 +17,7 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val storage = FirebaseStorage.getInstance()
     private val usersCollection = db.collection("Users")
 
     override suspend fun loginUser(email: String, pass: String): Boolean {
@@ -61,6 +64,33 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
             doc.toObject(UserDTO::class.java)?.toDomain()
         } catch (e: Exception) {
             null
+        }
+    }
+
+    override suspend fun logout() {
+        auth.signOut()
+    }
+
+    override fun getCurrentUserId(): String? {
+        return auth.currentUser?.uid
+    }
+
+    override suspend fun uploadAvatar(uid: String, uri: Uri): String? {
+        return try {
+            val ref = storage.reference.child("avatars/$uid")
+            ref.putFile(uri).await()
+            ref.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override suspend fun updateProfile(uid: String, updates: Map<String, Any>): Boolean {
+        return try {
+            usersCollection.document(uid).update(updates).await()
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 }
