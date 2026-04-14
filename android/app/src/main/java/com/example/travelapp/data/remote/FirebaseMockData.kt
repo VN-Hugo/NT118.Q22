@@ -30,7 +30,13 @@ class FirebaseMockData @Inject constructor() {
                 address = "Phân khu chức năng 7.9, KDL Hồ Tuyền Lâm",
                 price = 1200000.0,
                 averageRating = 4.5f,
-                images = listOf(PropertyImage("https://images.unsplash.com/photo-1566073771259-6a8506099945", true))
+                description = "Khu nghỉ dưỡng Terracotta Đà Lạt nằm ẩn mình dưới những tán lá thông xanh biếc, soi bóng xuống mặt hồ Tuyền Lâm thơ mộng.",
+                tags = listOf("Wifi", "Hồ bơi", "Spa", "Nhà hàng"),
+                images = listOf(
+                    PropertyImage("https://images.unsplash.com/photo-1566073771259-6a8506099945", true),
+                    PropertyImage("https://images.unsplash.com/photo-1584132967334-10e028bd69f7", false)
+                ),
+                hotelInfo = HotelInfo("14:00", "12:00", "Không hút thuốc, không thú cưng.")
             ),
             Property(
                 proId = "pro2",
@@ -42,7 +48,13 @@ class FirebaseMockData @Inject constructor() {
                 address = "Bãi Dài, Gành Dầu",
                 price = 3500000.0,
                 averageRating = 4.8f,
-                images = listOf(PropertyImage("https://images.unsplash.com/photo-1582719478250-c89cae4dc85b", true))
+                description = "Vinpearl Resort & Spa Phú Quốc chào đón du khách bằng không gian nghỉ dưỡng sang trọng bậc nhất bên bãi biển hoang sơ.",
+                tags = listOf("Bãi biển riêng", "Sân Golf", "Công viên nước", "Buffet"),
+                images = listOf(
+                    PropertyImage("https://images.unsplash.com/photo-1582719478250-c89cae4dc85b", true),
+                    PropertyImage("https://images.unsplash.com/photo-1544124499-58912cbddaad", false)
+                ),
+                hotelInfo = HotelInfo("14:00", "12:00", "Yêu cầu xuất trình CCCD khi nhận phòng.")
             )
         )
         properties.forEach { db.collection("Properties").document(it.proId).set(it).await() }
@@ -54,21 +66,7 @@ class FirebaseMockData @Inject constructor() {
         )
         roomTypes.forEach { db.collection("Properties").document("pro1").collection("RoomTypes").document(it.roomTypeId).set(it).await() }
 
-        // 4. Coupons
-        val coupons = listOf(
-            Coupon("cp1", "WELCOME50", 50000.0, "fixed", 200000.0, System.currentTimeMillis() + 864000000, true),
-            Coupon("cp2", "SUMMER10", 10.0, "percent", 500000.0, System.currentTimeMillis() + 864000000, true)
-        )
-        coupons.forEach { db.collection("Coupons").document(it.couponId).set(it).await() }
-
-        // 5. Reviews for pro1
-        val reviews = listOf(
-            Review("rev1", "user123", "Nguyễn Văn A", "", 5, "Khách sạn rất đẹp, phục vụ tốt!", System.currentTimeMillis()),
-            Review("rev2", "user456", "Trần Thị B", "", 4, "View hồ Tuyền Lâm cực chill.", System.currentTimeMillis())
-        )
-        reviews.forEach { db.collection("Properties").document("pro1").collection("Reviews").document(it.reviewId).set(it).await() }
-
-        // 6. Mock Users (One Owner, One Traveler)
+        // 4. Mock Users
         val owner = User(
             uid = "owner123",
             fullName = "Trần Minh Hoàng",
@@ -86,20 +84,5 @@ class FirebaseMockData @Inject constructor() {
             avatarUrl = "https://i.pravatar.cc/150?u=user123"
         )
         db.collection("Users").document(traveler.uid).set(traveler).await()
-
-        // 7. Booking for traveler
-        val booking = Booking(
-            bookId = "book1",
-            userId = "user123",
-            proId = "pro1",
-            proName = "Terracotta Hotel & Resort",
-            startDate = System.currentTimeMillis(),
-            endDate = System.currentTimeMillis() + 172800000,
-            totalPrice = 2400000.0,
-            status = "confirmed",
-            bookingType = "hotel",
-            hotelBooking = HotelBookingDetails("rt1", 1)
-        )
-        db.collection("Bookings").document(booking.bookId).set(booking).await()
     }
 }

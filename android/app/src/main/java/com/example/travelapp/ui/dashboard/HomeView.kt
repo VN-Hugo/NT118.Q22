@@ -29,6 +29,7 @@ data class Deal(val title: String, val desc: String, val tag: String, val color:
 
 @Composable
 fun SmartTravelHomeScreen(
+    onPropertyClick: (String) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val homeState by viewModel.homeState.collectAsState()
@@ -52,7 +53,7 @@ fun SmartTravelHomeScreen(
                 }
             }
             is HomeState.Success -> {
-                HotelList(state.suggestedHotels)
+                HotelList(state.suggestedHotels, onPropertyClick)
             }
             is HomeState.Error -> {
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
@@ -156,14 +157,14 @@ fun SectionHeader(title: String, hasSeeAll: Boolean) {
 }
 
 @Composable
-fun HotelList(hotels: List<Property>) {
+fun HotelList(hotels: List<Property>, onPropertyClick: (String) -> Unit) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(hotels) { hotel ->
             Card(
-                modifier = Modifier.width(220.dp).clickable { /* Navigate to detail */ },
+                modifier = Modifier.width(220.dp).clickable { onPropertyClick(hotel.proId) },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(4.dp)

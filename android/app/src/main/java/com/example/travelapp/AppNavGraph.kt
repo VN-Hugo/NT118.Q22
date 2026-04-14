@@ -4,11 +4,14 @@ import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 import com.example.travelapp.ui.login.LoginScreen
 import com.example.travelapp.ui.login.WelcomeScreen
 import com.example.travelapp.ui.register.RegisterScreen
 import com.example.travelapp.ui.dashboard.MainDashboardContainer
 import com.example.travelapp.ui.owner.OwnerDashboardContainer
+import com.example.travelapp.ui.dashboard.PropertyDetailScreen
 
 // Quản lý Route tập trung
 object Routes {
@@ -20,6 +23,9 @@ object Routes {
     // Luồng trong (Main app)
     const val MAIN_DASHBOARD = "main_dashboard"
     const val OWNER_DASHBOARD = "owner_dashboard"
+    
+    // Chi tiết (Nested hoặc Root tùy thiết kế, ở đây cho vào Root để dễ quản lý)
+    const val PROPERTY_DETAIL = "property_detail/{proId}"
 }
 
 @Composable
@@ -79,6 +85,14 @@ fun AppNavGraph(navController: NavHostController) {
         // 5. Cụm Dashboard cho Chủ khách sạn (Owner)
         composable(Routes.OWNER_DASHBOARD) {
             OwnerDashboardContainer(rootNavController = navController)
+        }
+
+        // 6. Màn hình Chi tiết khách sạn
+        composable(
+            route = Routes.PROPERTY_DETAIL,
+            arguments = listOf(navArgument("proId") { type = NavType.StringType })
+        ) {
+            PropertyDetailScreen(onBack = { navController.popBackStack() })
         }
     }
 }

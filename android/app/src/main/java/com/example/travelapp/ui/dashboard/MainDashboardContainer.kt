@@ -16,7 +16,7 @@ import com.example.travelapp.ui.planner.AIPlannerScreen
 
 @Composable
 fun MainDashboardContainer(rootNavController: NavHostController) {
-    // NavController riêng cho các tab bên trong
+    // NavController riêng cho các tab bên trong (Home, Explore, Trips, AI Planner, Profile)
     val internalNavController = rememberNavController()
     val navBackStackEntry by internalNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "home"
@@ -26,9 +26,11 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
             TravelBottomBar(
                 currentRoute = currentRoute,
                 onNavigate = { targetRoute ->
+                    // Tránh tạo nhiều instance của cùng một màn hình khi nhấn tab liên tục
                     internalNavController.navigate(targetRoute) {
-                        // Tránh chồng chéo các màn hình khi nhấn tab nhiều lần
-                        popUpTo(internalNavController.graph.startDestinationId) { saveState = true }
+                        popUpTo(internalNavController.graph.startDestinationId) {
+                            saveState = true
+                        }
                         launchSingleTop = true
                         restoreState = true
                     }
@@ -36,32 +38,52 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
             )
         }
     ) { paddingValues ->
-        // NavHost nội bộ xử lý các nút Home, Explore, Profile...
+        // NavHost nội bộ xử lý việc chuyển đổi giữa các Tab
         NavHost(
             navController = internalNavController,
-            startDestination = "home", // Mặc định vào tab home
+            startDestination = "home",
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable("home") { SmartTravelHomeScreen() }
+            // 1. Tab Trang chủ
+            composable("home") { 
+                SmartTravelHomeScreen(
+                    onPropertyClick = { proId ->
+                        // Sử dụng rootNavController để chuyển sang màn hình Chi tiết (ẩn Bottom Bar)
+                        rootNavController.navigate("property_detail/$proId")
+                    }
+                ) 
+            }
 
+            // 2. Tab Khám phá
+            composable("explore") {
+                ExploreScreen(
+                    onPropertyClick = { proId ->
+                        // Sử dụng rootNavController để chuyển sang màn hình Chi tiết (ẩn Bottom Bar)
+                        rootNavController.navigate("property_detail/$proId")
+                    }
+                )
+            }
+
+            // 3. Tab Chuyến đi của tôi
+            composable("trips") {
+                MyTripsScreen()
+            }
+
+            // 4. Tab Trợ lý AI Planner
+            composable("ai_planner") {
+                AIPlannerScreen()
+            }
+
+            // 5. Tab Hồ sơ cá nhân
             composable("profile") {
                 ProfileScreen(
                     onLogoutSuccess = {
-                        // Dùng rootNavController để thoát ra màn hình Welcome bên ngoài
+                        // Khi đăng xuất, dùng rootNavController quay về Welcome và xóa toàn bộ stack
                         rootNavController.navigate(Routes.WELCOME) {
                             popUpTo(Routes.MAIN_DASHBOARD) { inclusive = true }
                         }
                     }
                 )
-            }
-            composable("ai_planner") {
-                AIPlannerScreen()
-            }
-            composable("explore") {
-                ExploreScreen()
-            }
-            composable("trips") {
-                MyTripsScreen()
             }
         }
     }
