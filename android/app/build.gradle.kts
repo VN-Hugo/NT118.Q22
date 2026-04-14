@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -36,7 +38,6 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true
     }
 }
 
@@ -49,7 +50,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -62,8 +62,19 @@ dependencies {
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
+    // Navigation
     implementation("androidx.navigation:navigation-compose:2.9.7")
+    //Coil
     implementation("io.coil-kt:coil-compose:2.7.0")
+    // Dagger - Hill
+    implementation("com.google.dagger:hilt-android:2.59.2")
+    ksp("com.google.dagger:hilt-android-compiler:2.59.2")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
+    // Google
+    implementation("com.google.android.gms:play-services-auth:21.5.0")
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")

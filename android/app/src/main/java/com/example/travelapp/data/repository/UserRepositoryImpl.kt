@@ -1,0 +1,66 @@
+package com.example.travelapp.data.repository
+
+import com.example.travelapp.data.remote.dto.UserDTO
+import com.example.travelapp.data.mapper.toDTO
+import com.example.travelapp.data.mapper.toDomain
+import com.example.travelapp.domain.model.User
+import com.example.travelapp.domain.repository.UserRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
+
+class UserRepositoryImpl @Inject constructor() : UserRepository {
+
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+    private val usersCollection = db.collection("Users")
+
+    override suspend fun loginUser(email: String, pass: String): Boolean {
+        return try {
+            auth.signInWithEmailAndPassword(email, pass).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): Boolean {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            auth.signInWithCredential(credential).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override suspend fun registerUser(email: String, pass: String): String? {
+        return try {
+            val result = auth.createUserWithEmailAndPassword(email, pass).await()
+            result.user?.uid
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override suspend fun saveUser(user: User): Boolean {
+        return try {
+            val dto = user.toDTO()
+            usersCollection.document(dto.uid).set(dto).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override suspend fun getUserProfile(uid: String): User? {
+        return try {
+            val doc = usersCollection.document(uid).get().await()
+            doc.toObject(UserDTO::class.java)?.toDomain()
+        } catch (e: Exception) {
+            null
+        }
+    }
+}

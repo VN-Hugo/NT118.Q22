@@ -7,7 +7,7 @@ import androidx.navigation.compose.composable
 import com.example.travelapp.ui.login.LoginScreen
 import com.example.travelapp.ui.login.WelcomeScreen
 import com.example.travelapp.ui.register.RegisterScreen
-import com.example.travelapp.ui.dashboard.MainDashboardContainer // File mới sẽ tạo ở bước sau
+import com.example.travelapp.ui.dashboard.MainDashboardContainer
 
 // Quản lý Route tập trung
 object Routes {
@@ -30,7 +30,13 @@ fun AppNavGraph(navController: NavHostController) {
         composable(Routes.WELCOME) {
             WelcomeScreen(
                 onNavigateToLogin = { navController.navigate(Routes.LOGIN) },
-                onNavigateToRegister = { navController.navigate(Routes.REGISTER) }
+                onNavigateToRegister = { navController.navigate(Routes.REGISTER) },
+                onLoginSuccess = {
+                    // Khi login bằng Google thành công từ Welcome
+                    navController.navigate(Routes.MAIN_DASHBOARD) {
+                        popUpTo(Routes.WELCOME) { inclusive = true }
+                    }
+                }
             )
         }
 

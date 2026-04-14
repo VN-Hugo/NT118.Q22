@@ -2,11 +2,12 @@ package com.example.travelapp.ui.login
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.BorderStroke // Đã thêm import này
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -16,23 +17,70 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.travelapp.R
-
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @Composable
-fun WelcomeScreen(onNavigateToLogin: () -> Unit, onNavigateToRegister: () -> Unit) {
+fun WelcomeScreen(
+    onNavigateToLogin: () -> Unit,
+    onNavigateToRegister: () -> Unit,
+    onLoginSuccess: () -> Unit,
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
+    val authState = authViewModel.authState
+
+    // Google Sign-In configuration
+    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken(context.getString(R.string.default_web_client_id))
+        .requestEmail()
+        .build()
+    val googleSignInClient = GoogleSignIn.getClient(context, gso)
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            account?.idToken?.let { idToken ->
+                authViewModel.signInWithGoogle(idToken)
+            }
+        } catch (e: ApiException) {
+            Toast.makeText(context, "Google sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Success -> {
+                onLoginSuccess()
+                authViewModel.resetState()
+            }
+            is AuthState.Error -> {
+                Toast.makeText(context, authState.message, Toast.LENGTH_SHORT).show()
+                authViewModel.resetState()
+            }
+            else -> {}
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Hình nền
         Image(
-            painter = painterResource(id = R.drawable.background), // Đã đổi tên theo ý bạn
+            painter = painterResource(id = R.drawable.background),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
 
-        // 2. Lớp phủ Gradient
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -40,7 +88,7 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit, onNavigateToRegister: () -> Uni
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.3f), // Đổi sang tối một chút để dễ đọc chữ trắng
+                            Color.Black.copy(alpha = 0.3f),
                             Color.Black.copy(alpha = 0.7f)
                         ),
                         startY = 500f
@@ -48,7 +96,6 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit, onNavigateToRegister: () -> Uni
                 )
         )
 
-        // 3. Nội dung
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -64,7 +111,7 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit, onNavigateToRegister: () -> Uni
                 lineHeight = 48.sp,
                 modifier = Modifier.padding(bottom = 40.dp)
             )
-            // Tạo tài khoản mới
+
             Button(
                 onClick = { onNavigateToRegister() },
                 modifier = Modifier
@@ -82,12 +129,11 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit, onNavigateToRegister: () -> Uni
                 text = "Bạn đã có tài khoản? Đăng nhập",
                 color = Color.White,
                 fontSize = 16.sp,
-                modifier = Modifier.clickable { onNavigateToLogin() } // Gọi hàm khi click
+                modifier = Modifier.clickable { onNavigateToLogin() }
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Dùng HorizontalDivider thay cho Divider cũ của Material3
             Row(verticalAlignment = Alignment.CenterVertically) {
                 HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(alpha = 0.5f))
                 Text(" Đăng nhập bằng ", color = Color.White, fontSize = 12.sp)
@@ -100,20 +146,32 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit, onNavigateToRegister: () -> Uni
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Sửa lỗi mismatch bằng cách chỉ định rõ tham số modifier
                 SocialButton(
-                    iconRes = R.drawable.ic_apple,
-                    text = "Apple",
-                    modifier = Modifier.weight(1f)
+                    iconRes = R.drawable.ic_apple, // Giữ icon apple nhưng đổi text thành Facebook như yêu cầu
+                    text = "Facebook",
+                    modifier = Modifier.weight(1f),
+                    onClick = { /* Xử lý Facebook ở đây nếu cần */ }
                 )
                 SocialButton(
                     iconRes = R.drawable.ic_google,
                     text = "Google",
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onClick = { googleSignInLauncher.launch(googleSignInClient.signInIntent) }
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        if (authState is AuthState.Loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color.White)
+            }
         }
     }
 }
@@ -122,14 +180,15 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit, onNavigateToRegister: () -> Uni
 fun SocialButton(
     iconRes: Int,
     text: String,
-    modifier: Modifier = Modifier // Gán mặc định để linh hoạt hơn
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
     OutlinedButton(
-        onClick = { /* Xử lý */ },
-        modifier = modifier.height(56.dp), // Chú ý: dùng 'modifier' biến truyền vào
+        onClick = onClick,
+        modifier = modifier.height(56.dp),
         shape = RoundedCornerShape(28.dp),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)),
-        contentPadding = PaddingValues(0.dp) // Đảm bảo icon và chữ không bị lệch
+        contentPadding = PaddingValues(0.dp)
     ) {
         Icon(
             painter = painterResource(id = iconRes),
