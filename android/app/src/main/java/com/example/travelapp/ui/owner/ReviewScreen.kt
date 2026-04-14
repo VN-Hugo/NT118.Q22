@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.travelapp.ui.components.HotelBottomBar
 
 // Màu sắc theo thiết kế
 private val TealDark = Color(0xFF004D40)
@@ -28,25 +27,23 @@ private val AiCardBg = Color(0xFFE0F2F1)
 fun ReviewScreen(
     onNavigate: (String) -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("The Editorial Concierge", fontWeight = FontWeight.Bold, color = TealDark) },
-                actions = { IconButton(onClick = {}) { Icon(Icons.Default.Notifications, null) } },
-                navigationIcon = {
-                    Box(Modifier.padding(8.dp).size(35.dp).background(Color.Gray, CircleShape)) // Avatar profile
-                }
-            )
-        },
-        bottomBar = {
-            HotelBottomBar(currentRoute = "analytics", onNavigate = onNavigate)
-        }
-    ) { padding ->
+    // KHÔNG dùng HotelBottomBar ở đây nữa vì đã có ở OwnerDashboardContainer
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        TopAppBar(
+            title = { Text("The Editorial Concierge", fontWeight = FontWeight.Bold, color = TealDark) },
+            actions = { IconButton(onClick = {}) { Icon(Icons.Default.Notifications, null) } },
+            navigationIcon = {
+                Box(Modifier.padding(8.dp).size(35.dp).background(Color.Gray, CircleShape))
+            }
+        )
+
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(Color.White)
+                .weight(1f)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
@@ -59,7 +56,7 @@ fun ReviewScreen(
                     Text("4.8", fontSize = 60.sp, fontWeight = FontWeight.Black, color = TealDark)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         repeat(4) { Icon(Icons.Default.Star, null, tint = TealDark) }
-                        Icon(Icons.Default.Person, null, tint = TealDark)
+                        Icon(Icons.Default.Lock, null, tint = TealDark)
                     }
                     Text("Dựa trên 1,248 đánh giá", fontSize = 12.sp, color = Color.Gray)
                 }
@@ -75,7 +72,7 @@ fun ReviewScreen(
                                 .background(TealDark, RoundedCornerShape(8.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Phone, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Lock, null, tint = Color.White, modifier = Modifier.size(20.dp))
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
@@ -89,7 +86,7 @@ fun ReviewScreen(
                 }
             }
 
-            // 3. Phân phối xếp hạng (Rating Bars)
+            // 3. Phân phối xếp hạng
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = Color.White), border = BorderStroke(1.dp, Color(0xFFEEEEEE))) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -104,7 +101,7 @@ fun ReviewScreen(
                 }
             }
 
-            // 4. Review Item mẫu
+            // 4. Review Items
             item {
                 ReviewItem(
                     name = "Lê Thu Hà",
@@ -115,6 +112,7 @@ fun ReviewScreen(
                     reply = "Chào chị Hà, cảm ơn chị đã dành thời gian đánh giá..."
                 )
             }
+            item { Spacer(modifier = Modifier.height(24.dp)) }
         }
     }
 }
@@ -165,7 +163,7 @@ fun ReviewItem(name: String, info: String, time: String, content: String, hasIma
             Box(modifier = Modifier.padding(top = 12.dp).background(BgLightGray, RoundedCornerShape(8.dp)).padding(12.dp)) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Person, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                        Icon(Icons.Default.Lock, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
                         Text(" Bạn đã phản hồi:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TealDark)
                     }
                     Text(reply, fontSize = 13.sp, color = Color.DarkGray)

@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.travelapp.ui.components.HotelBottomBar
 
 // Bảng màu đồng bộ với thiết kế
 private val TealPrimaryColor = Color(0xFF004D40)
@@ -27,15 +26,13 @@ private val VisaDarkColor = Color(0xFF1A1F24)
 fun OwnerProfileScreen(
     onNavigate: (String) -> Unit
 ) {
+    // KHÔNG dùng HotelBottomBar ở đây nữa vì đã có ở OwnerDashboardContainer
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Icon(imageVector = Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp), tint = TealPrimaryColor) },
                 actions = { IconButton(onClick = {}) { Icon(Icons.Default.Notifications, null, tint = TealPrimaryColor) } }
             )
-        },
-        bottomBar = {
-            HotelBottomBar(currentRoute = "profile", onNavigate = onNavigate)
         }
     ) { padding ->
         LazyColumn(
@@ -133,7 +130,7 @@ fun ProfileInfoCard() {
 fun BusinessInfoCard() {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Person, null, tint = TealPrimaryColor)
+            Icon(Icons.Default.Star, null, tint = TealPrimaryColor)
             Text("  Thông tin doanh nghiệp", fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(8.dp))
@@ -184,7 +181,7 @@ fun PaymentMethodCard() {
         Card(colors = CardDefaults.cardColors(containerColor = VisaDarkColor), shape = RoundedCornerShape(16.dp)) {
             Column(Modifier.padding(20.dp).fillMaxWidth()) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Icon(Icons.Default.Info, null, tint = Color.White)
+                    Icon(Icons.Default.Person, null, tint = Color.White)
                     Text("VISA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 }
                 Spacer(Modifier.height(24.dp))
@@ -218,7 +215,7 @@ fun TransactionHistoryCard() {
 fun TransactionItem(title: String, date: String, amount: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(36.dp).background(CardGrayColor, CircleShape), contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.Person, null, modifier = Modifier.size(18.dp), tint = Color.Gray)
+            Icon(Icons.Default.Phone, null, modifier = Modifier.size(18.dp), tint = Color.Gray)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {

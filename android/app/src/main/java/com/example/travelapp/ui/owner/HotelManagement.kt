@@ -49,7 +49,7 @@ fun AddHotelScreen() {
                 }
             )
         },
-        bottomBar = { DashboardBottomNav() } // Dùng lại từ code trước, nhớ set selected cho mục "Khách sạn"
+        // Dùng lại từ code trước, nhớ set selected cho mục "Khách sạn"
     ) { paddingValues ->
         Column(
             modifier = Modifier

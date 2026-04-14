@@ -25,18 +25,19 @@ val DarkTeal = Color(0xFF004048)
 val AIGreen = Color(0xFF006D5B)
 val BgGray = Color(0xFFF8F9FA)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OwnerDashboardScreen() {
-    Scaffold(
-        containerColor = BgGray,
-        topBar = { DashboardTopBar() },
-        bottomBar = { DashboardBottomNav() }
-    ) { innerPadding ->
+    // Chỉ trả về nội dung, không dùng Scaffold ở đây vì đã có ở Container
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BgGray)
+    ) {
+        DashboardTopBar() // Giữ TopBar nếu bạn muốn mỗi màn hình có TopBar riêng hoặc chuyển nó ra Container
+        
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .weight(1f)
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -151,9 +152,9 @@ fun QuickActionsSection() {
     Surface(color = PrimaryTeal, shape = RoundedCornerShape(12.dp)) {
         Column(modifier = Modifier.padding(4.dp)) {
             QuickActionButton("Thêm phòng mới", Icons.Default.AddCircle)
-            Divider(color = Color.White.copy(alpha = 0.1f), modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.1f), modifier = Modifier.padding(horizontal = 16.dp))
             QuickActionButton("Xem đặt phòng", Icons.Default.List)
-            Divider(color = Color.White.copy(alpha = 0.1f), modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.1f), modifier = Modifier.padding(horizontal = 16.dp))
             QuickActionButton("Báo cáo phân tích", Icons.Default.Person)
         }
     }
@@ -208,18 +209,7 @@ fun ScheduleItem(name: String, detail: String, type: String, icon: ImageVector) 
 }
 
 @Composable
-fun DashboardBottomNav() {
-    NavigationBar(containerColor = Color.White) {
-        NavigationBarItem(selected = true, onClick = {}, icon = { Icon(Icons.Default.LocationOn, null) }, label = { Text("Tổng quan") })
-        NavigationBarItem(selected = false, onClick = {}, icon = { Icon(Icons.Default.LocationOn, null) }, label = { Text("Khách sạn") })
-        NavigationBarItem(selected = false, onClick = {}, icon = { Icon(Icons.Default.LocationOn, null) }, label = { Text("Đặt phòng") })
-        NavigationBarItem(selected = false, onClick = {}, icon = { Icon(Icons.Default.Person, null) }, label = { Text("Cá nhân") })
-    }
-}
-
-@Composable
 fun TrendChartSection() {
-    // Đây là phần placeholder cho biểu đồ, trong thực tế bạn có thể dùng thư viện như MPAndroidChart hoặc Compose Chart
     Column {
         Text("Biểu đồ xu hướng", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = PrimaryTeal)
         Box(modifier = Modifier.fillMaxWidth().height(150.dp).padding(top = 8.dp).background(Color.White, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {

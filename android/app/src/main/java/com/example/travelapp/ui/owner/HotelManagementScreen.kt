@@ -54,7 +54,7 @@ fun HotelManagementScreen() {
                 Text("Thêm khách sạn mới", fontWeight = FontWeight.Bold)
             }
         },
-        bottomBar = { DashboardBottomNav() }
+
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
