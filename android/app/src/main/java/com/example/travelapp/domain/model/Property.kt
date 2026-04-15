@@ -16,7 +16,8 @@ data class Property(
     val images: List<PropertyImage> = emptyList(),
     // Thông tin mở rộng tùy theo type
     val hotelInfo: HotelInfo? = null,
-    val activityInfo: ActivityInfo? = null
+    val activityInfo: ActivityInfo? = null,
+    val defaultPrice: Double = 0.0
 )
 
 data class PropertyImage(

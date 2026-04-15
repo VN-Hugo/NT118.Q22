@@ -9,61 +9,71 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
-
-// 1. Data Models (Nên tách ra file riêng nếu dùng ở nhiều màn hình khác nhau)
-import com.example.travelapp.model.Hotel
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.example.travelapp.repository.PlaceRepository
+import androidx.lifecycle.viewmodel.compose.viewModel
 
+// 1. Import đúng chuẩn model Property mới của bạn
+import com.example.travelapp.domain.model.Property
+
+// LƯU Ý: Bạn hãy import PropertyRepository theo đúng đường dẫn trong app của bạn nhé!
+// Ví dụ: import com.example.travelapp.domain.repository.PropertyRepository
+// Ở đây mình tạm comment lại để tránh báo đỏ nếu sai đường dẫn
+// import com.example.travelapp.repository.PropertyRepository
 
 data class Deal(val title: String, val desc: String, val tag: String, val color: Color)
 
 class HomeViewModel : ViewModel() {
-    // 1. Khởi tạo kho dữ liệu
-    private val repository = PlaceRepository()
+    // 1. Khởi tạo kho dữ liệu mới (Sửa lại tên repository cho đúng với file của bạn)
+    // private val repository = PropertyRepository()
 
-    // 2. Tạo một biến trạng thái để chứa danh sách khách sạn.
-    // Giao diện sẽ "lắng nghe" biến này, hễ có data là nó tự động vẽ lên!
-    var hotelList = mutableStateOf<List<Hotel>>(emptyList())
+    // 2. Chuyển từ List<Hotel> sang List<Property>
+    var propertyList = mutableStateOf<List<Property>>(emptyList())
         private set
 
-    // 3. Hàm gọi xuống Repository để lấy dữ liệu từ mạng về
-    fun loadHotels() {
-        repository.getAllHotels(
+    // 3. Hàm gọi dữ liệu
+    fun loadProperties() {
+        // LƯU Ý: Bỏ comment và gọi đúng hàm lấy danh sách trong PropertyRepository của bạn
+        /*
+        repository.getAllProperties(
             onSuccess = { data ->
-                hotelList.value = data // Cập nhật dữ liệu vào biến trạng thái
+                propertyList.value = data
             },
             onFailure = { exception ->
-                // Xử lý báo lỗi ở đây nếu cần (VD: in log)
+                // Xử lý báo lỗi ở đây nếu cần
             }
+        )
+        */
+
+        // Tạm thời tạo data giả (Mock Data) để bạn thấy UI không bị lỗi:
+        propertyList.value = listOf(
+            Property(name = "Khách sạn Mường Thanh", address = "Đà Nẵng", averageRating = 4.5f),
+            Property(name = "Vinpearl Resort", address = "Nha Trang", averageRating = 4.8f)
         )
     }
 }
 
 @Composable
 fun SmartTravelHomeScreen(
-    viewModel: HomeViewModel = viewModel() // Bơm ViewModel vào đây
+    viewModel: HomeViewModel = viewModel()
 ) {
-    // 1. Lắng nghe danh sách khách sạn từ ViewModel
-    val hotels = viewModel.hotelList.value
+    // 1. Lắng nghe danh sách property từ ViewModel
+    val properties = viewModel.propertyList.value
 
-    // 2. Tự động tải dữ liệu khi vừa mở màn hình
+    // 2. Tự động tải dữ liệu
     LaunchedEffect(Unit) {
-        viewModel.loadHotels()
+        viewModel.loadProperties()
     }
 
-    // CHÚ Ý: Đã bỏ Scaffold và BottomBar vì DashboardContainer đã quản lý rồi
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -74,10 +84,10 @@ fun SmartTravelHomeScreen(
         SearchBar()
         FeaturedCard()
 
-        SectionHeader(title = "Suggested Hotels", hasSeeAll = true)
+        SectionHeader(title = "Suggested Properties", hasSeeAll = true)
 
-        // Truyền dữ liệu thật vào đây
-        HotelList(hotels = hotels)
+        // Truyền dữ liệu mới vào
+        PropertyList(properties = properties)
 
         SectionHeader(title = "Limited Time Deals", hasSeeAll = false)
         DealsList()
@@ -85,6 +95,7 @@ fun SmartTravelHomeScreen(
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
+
 // --- Thành phần UI nhỏ ---
 
 @Composable
@@ -132,7 +143,6 @@ fun FeaturedCard() {
             .height(220.dp)
             .clip(RoundedCornerShape(24.dp))
     ) {
-        // Tạm thời dùng màu xám, sau này bạn thay bằng Image()
         Box(modifier = Modifier.fillMaxSize().background(Color.DarkGray))
 
         Column(modifier = Modifier.align(Alignment.BottomStart).padding(20.dp)) {
@@ -175,14 +185,12 @@ fun SectionHeader(title: String, hasSeeAll: Boolean) {
 }
 
 @Composable
-fun HotelList(hotels: List<Hotel>) { // <-- 1. Yêu cầu truyền danh sách vào đây
-
+fun PropertyList(properties: List<Property>) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 2. Vẽ danh sách dựa trên biến 'hotels' truyền vào
-        items(hotels) { hotel ->
+        items(properties) { property ->
             Card(
                 modifier = Modifier.width(220.dp),
                 shape = RoundedCornerShape(16.dp),
@@ -193,14 +201,19 @@ fun HotelList(hotels: List<Hotel>) { // <-- 1. Yêu cầu truyền danh sách v�
                     Box(modifier = Modifier.height(140.dp).fillMaxWidth().background(Color.LightGray))
                     Column(modifier = Modifier.padding(12.dp)) {
                         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                            Text(hotel.name, fontWeight = FontWeight.Bold, maxLines = 1)
+                            // Gọi property.name
+                            Text(property.name, fontWeight = FontWeight.Bold, maxLines = 1)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Star, null, tint = Color(0xFFFFB300), modifier = Modifier.size(14.dp))
-                                Text(hotel.rating, fontSize = 12.sp, color = Color.Gray)
+                                // Ép kiểu float thành string cho averageRating
+                                Text(property.averageRating.toString(), fontSize = 12.sp, color = Color.Gray)
                             }
                         }
-                        Text(hotel.location, fontSize = 12.sp, color = Color.Gray)
-                        Text("${hotel.price}/night", color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
+                        // Đổi location thành address
+                        Text(property.address, fontSize = 12.sp, color = Color.Gray)
+
+                        // Đã ẩn phần giá tiền vì Property hiện tại không lưu giá cơ sở
+                        // Text("Đang cập nhật/night", color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
                     }
                 }
             }

@@ -38,6 +38,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -78,4 +79,5 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
+
 }
