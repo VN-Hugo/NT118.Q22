@@ -80,4 +80,7 @@ dependencies {
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
 
+    // For Markdown display
+    implementation("com.github.jeziellago:compose-markdown:0.5.0")
+
 }

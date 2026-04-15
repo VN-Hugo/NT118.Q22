@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import android.util.Log
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -241,7 +242,8 @@ fun AIPlannerScreen() {
             title = { Text("Lịch trình đề xuất ✨") },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    Text(text = aiResult)
+                    //Text(text = aiResult)
+                    MarkdownText(markdown = aiResult)
                 }
             }
         )
