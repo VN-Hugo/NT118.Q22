@@ -1,5 +1,6 @@
 package com.example.travelapp.data.repository
 
+import android.net.Uri
 import com.example.travelapp.data.mapper.toDTO
 import com.example.travelapp.data.mapper.toDomain
 import com.example.travelapp.data.remote.dto.PropertyDTO
@@ -7,6 +8,7 @@ import com.example.travelapp.domain.model.Property
 import com.example.travelapp.domain.model.RoomType
 import com.example.travelapp.domain.repository.PropertyRepository
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -16,6 +18,7 @@ import javax.inject.Inject
 class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
 
     private val db = FirebaseFirestore.getInstance()
+    private val storage = FirebaseStorage.getInstance()
     private val propertiesCollection = db.collection("Properties")
 
     override fun getProperties(type: String?): Flow<List<Property>> = callbackFlow {
@@ -110,5 +113,15 @@ class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
                 }
             }
         awaitClose { subscription.remove() }
+    }
+
+    override suspend fun uploadPropertyImage(path: String, uri: Uri): String? {
+        return try {
+            val ref = storage.reference.child(path)
+            ref.putFile(uri).await()
+            ref.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            null
+        }
     }
 }

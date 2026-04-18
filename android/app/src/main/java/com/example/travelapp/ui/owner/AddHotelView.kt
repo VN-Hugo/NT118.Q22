@@ -1,8 +1,12 @@
 package com.example.travelapp.ui.owner
 
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -11,17 +15,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 
 private val BrandTealColor = Color(0xFF005D67)
 private val SoftGrayColor = Color(0xFFF2F4F5)
-private val TipGreenColor = Color(0xFFE0F2F1)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +37,12 @@ fun AddHotelScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        viewModel.onImagesSelected(uris)
+    }
 
     LaunchedEffect(state) {
         when (state) {
@@ -75,7 +86,7 @@ fun AddHotelScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Section 1: Basic Info
+            // Section 1: Thông tin cơ bản
             SectionHeaderOwner("THÔNG TIN CƠ BẢN")
             OwnerInputField(
                 label = "Tên khách sạn",
@@ -96,23 +107,63 @@ fun AddHotelScreen(
                 placeholder = "Ví dụ: Đà Lạt"
             )
 
-            // Section 2: Pricing & Description
-            SectionHeaderOwner("GIÁ CẢ & MÔ TẢ")
+            // Section 2: Mô tả
+            SectionHeaderOwner("MÔ TẢ KHÁCH SẠN")
             OwnerInputField(
-                label = "Giá khởi điểm (đ/đêm)",
-                value = viewModel.price,
-                onValueChange = { viewModel.price = it },
-                placeholder = "Ví dụ: 1200000"
-            )
-            OwnerInputField(
-                label = "Mô tả khách sạn",
+                label = "Giới thiệu",
                 value = viewModel.description,
                 onValueChange = { viewModel.description = it },
                 placeholder = "Giới thiệu về khách sạn của bạn...",
                 isMultiLine = true
             )
 
-            // Section 3: Amenities (Tags)
+            // Section 3: Hình ảnh
+            SectionHeaderOwner("HÌNH ẢNH KHÁCH SẠN")
+            if (viewModel.selectedImages.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .background(SoftGrayColor, RoundedCornerShape(12.dp))
+                        .clickable { galleryLauncher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(40.dp))
+                        Text("Bấm để chọn ảnh từ thư viện", color = Color.Gray, fontSize = 12.sp)
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    viewModel.selectedImages.forEach { uri ->
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .background(SoftGrayColor, RoundedCornerShape(8.dp))
+                            .clickable { galleryLauncher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = BrandTealColor)
+                    }
+                }
+                TextButton(onClick = { viewModel.onImagesSelected(emptyList()) }) {
+                    Text("Xóa tất cả ảnh", color = Color.Red, fontSize = 12.sp)
+                }
+            }
+
+            // Section 4: Tiện ích
             SectionHeaderOwner("TIỆN ÍCH NỔI BẬT")
             FlowRowOwner(spacing = 8.dp) {
                 val tags = listOf("Wifi", "Hồ bơi", "Spa", "Nhà hàng", "Bãi biển", "Phòng gym", "Buffet")

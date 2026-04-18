@@ -61,8 +61,19 @@ fun OwnerDashboardContainer(rootNavController: NavHostController) {
             }
 
             // Màn hình Quản lý phòng của từng khách sạn
-            composable("room_mgmt/{proId}") {
-                RoomManagementScreen() // Sau này sẽ truyền proId vào ViewModel của màn hình này
+            composable("room_mgmt/{proId}") { backStackEntry ->
+                val proId = backStackEntry.arguments?.getString("proId") ?: ""
+                RoomManagementScreen(
+                    onBack = { internalNavController.popBackStack() },
+                    onAddRoomClick = { internalNavController.navigate("add_room/$proId") }
+                )
+            }
+
+            // Màn hình Thêm hạng phòng
+            composable("add_room/{proId}") {
+                AddRoomScreen(
+                    onBack = { internalNavController.popBackStack() }
+                )
             }
 
             composable("bookings") { BookingManagementScreen() }
