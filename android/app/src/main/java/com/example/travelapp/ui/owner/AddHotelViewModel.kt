@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.travelapp.domain.model.Property
@@ -30,10 +31,12 @@ class AddHotelViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
 
-    var hotelName by mutableStateOf("")
-    var address by mutableStateOf("")
-    var desName by mutableStateOf("")
-    var description by mutableStateOf("")
+    // Chuyển sang TextFieldValue để hỗ trợ bộ gõ tiếng Việt tốt hơn
+    var hotelName by mutableStateOf(TextFieldValue(""))
+    var address by mutableStateOf(TextFieldValue(""))
+    var desName by mutableStateOf(TextFieldValue(""))
+    var description by mutableStateOf(TextFieldValue(""))
+    
     var selectedTags by mutableStateOf(setOf<String>())
     var selectedImages by mutableStateOf<List<Uri>>(emptyList())
 
@@ -54,7 +57,7 @@ class AddHotelViewModel @Inject constructor(
 
     fun saveHotel() {
         val ownerId = userRepository.getCurrentUserId() ?: return
-        if (hotelName.isEmpty() || address.isEmpty()) {
+        if (hotelName.text.isEmpty() || address.text.isEmpty()) {
             _state.value = AddHotelState.Error("Vui lòng điền tên và địa chỉ")
             return
         }
@@ -63,7 +66,6 @@ class AddHotelViewModel @Inject constructor(
             _state.value = AddHotelState.Loading
             
             try {
-                // 1. Upload images first
                 val uploadedImages = mutableListOf<PropertyImage>()
                 selectedImages.forEachIndexed { index, uri ->
                     val path = "properties/${UUID.randomUUID()}"
@@ -73,18 +75,16 @@ class AddHotelViewModel @Inject constructor(
                     }
                 }
 
-                // 2. Save property details
                 val property = Property(
                     ownerId = ownerId,
-                    name = hotelName,
-                    address = address,
-                    desName = desName,
-                    description = description,
+                    name = hotelName.text,
+                    address = address.text,
+                    desName = desName.text,
+                    description = description.text,
                     tags = selectedTags.toList(),
                     images = uploadedImages,
                     type = "hotel",
-                    status = "PENDING",
-                    price = 0.0 // Giá sẽ được tính từ các loại phòng
+                    status = "PENDING"
                 )
                 
                 val success = propertyRepository.saveProperty(property)

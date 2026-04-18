@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -31,11 +32,13 @@ class AddRoomViewModel @Inject constructor(
 
     val proId: String = savedStateHandle["proId"] ?: ""
 
-    var typeName by mutableStateOf("")
-    var price by mutableStateOf("")
-    var totalRooms by mutableStateOf("")
+    // Chuyển sang TextFieldValue để hỗ trợ tiếng Việt tốt hơn
+    var typeName by mutableStateOf(TextFieldValue(""))
+    var price by mutableStateOf(TextFieldValue(""))
+    var totalRooms by mutableStateOf(TextFieldValue(""))
+    var amenitiesText by mutableStateOf(TextFieldValue(""))
+    
     var selectedImages by mutableStateOf<List<Uri>>(emptyList())
-    var amenitiesText by mutableStateOf("")
 
     private val _state = MutableStateFlow<AddRoomState>(AddRoomState.Idle)
     val state = _state.asStateFlow()
@@ -46,7 +49,7 @@ class AddRoomViewModel @Inject constructor(
 
     fun saveRoom() {
         if (proId.isEmpty()) return
-        if (typeName.isEmpty() || price.isEmpty()) {
+        if (typeName.text.isEmpty() || price.text.isEmpty()) {
             _state.value = AddRoomState.Error("Vui lòng điền tên và giá phòng")
             return
         }
@@ -54,29 +57,31 @@ class AddRoomViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = AddRoomState.Loading
             
-            // 1. Upload ảnh (nếu có) - Ở đây tôi làm đơn giản là upload lên Storage
-            // Thực tế model RoomType hiện tại chưa có list images, bạn có thể thêm sau
-            // Tôi sẽ demo logic upload để bạn thấy cách hoạt động
-            val imageUrls = mutableListOf<String>()
-            selectedImages.forEach { uri ->
-                val path = "properties/$proId/rooms/${UUID.randomUUID()}"
-                propertyRepository.uploadPropertyImage(path, uri)?.let { imageUrls.add(it) }
-            }
+            try {
+                // Upload ảnh
+                val imageUrls = mutableListOf<String>()
+                selectedImages.forEach { uri ->
+                    val path = "properties/$proId/rooms/${UUID.randomUUID()}"
+                    propertyRepository.uploadPropertyImage(path, uri)?.let { imageUrls.add(it) }
+                }
 
-            // 2. Tạo đối tượng RoomType
-            val roomType = RoomType(
-                typeName = typeName,
-                price = price.toDoubleOrNull() ?: 0.0,
-                totalRooms = totalRooms.toIntOrNull() ?: 1,
-                amenities = amenitiesText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            )
+                // Tạo đối tượng RoomType
+                val roomType = RoomType(
+                    typeName = typeName.text,
+                    price = price.text.toDoubleOrNull() ?: 0.0,
+                    totalRooms = totalRooms.text.toIntOrNull() ?: 1,
+                    amenities = amenitiesText.text.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                )
 
-            // 3. Lưu vào Firestore
-            val success = propertyRepository.saveRoomType(proId, roomType)
-            if (success) {
-                _state.value = AddRoomState.Success
-            } else {
-                _state.value = AddRoomState.Error("Không thể lưu thông tin phòng")
+                // Lưu vào Firestore
+                val success = propertyRepository.saveRoomType(proId, roomType)
+                if (success) {
+                    _state.value = AddRoomState.Success
+                } else {
+                    _state.value = AddRoomState.Error("Không thể lưu thông tin phòng")
+                }
+            } catch (e: Exception) {
+                _state.value = AddRoomState.Error(e.message ?: "Lỗi không xác định")
             }
         }
     }

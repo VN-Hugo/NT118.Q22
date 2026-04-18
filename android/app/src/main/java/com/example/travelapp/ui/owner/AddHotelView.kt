@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -86,7 +86,6 @@ fun AddHotelScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Section 1: Thông tin cơ bản
             SectionHeaderOwner("THÔNG TIN CƠ BẢN")
             OwnerInputField(
                 label = "Tên khách sạn",
@@ -101,13 +100,12 @@ fun AddHotelScreen(
                 placeholder = "Số nhà, tên đường, phường/xã..."
             )
             OwnerInputField(
-                label = "Thành phố / Điểm đến",
+                label = "Thành phố",
                 value = viewModel.desName,
                 onValueChange = { viewModel.desName = it },
                 placeholder = "Ví dụ: Đà Lạt"
             )
 
-            // Section 2: Mô tả
             SectionHeaderOwner("MÔ TẢ KHÁCH SẠN")
             OwnerInputField(
                 label = "Giới thiệu",
@@ -117,7 +115,6 @@ fun AddHotelScreen(
                 isMultiLine = true
             )
 
-            // Section 3: Hình ảnh
             SectionHeaderOwner("HÌNH ẢNH KHÁCH SẠN")
             if (viewModel.selectedImages.isEmpty()) {
                 Box(
@@ -163,7 +160,6 @@ fun AddHotelScreen(
                 }
             }
 
-            // Section 4: Tiện ích
             SectionHeaderOwner("TIỆN ÍCH NỔI BẬT")
             FlowRowOwner(spacing = 8.dp) {
                 val tags = listOf("Wifi", "Hồ bơi", "Spa", "Nhà hàng", "Bãi biển", "Phòng gym", "Buffet")
@@ -187,21 +183,10 @@ fun AddHotelScreen(
 }
 
 @Composable
-fun SectionHeaderOwner(title: String) {
-    Text(
-        text = title,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Bold,
-        color = Color.Gray,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-}
-
-@Composable
 fun OwnerInputField(
     label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
+    value: TextFieldValue, // Sử dụng TextFieldValue thay vì String
+    onValueChange: (TextFieldValue) -> Unit,
     placeholder: String,
     isMultiLine: Boolean = false
 ) {
@@ -220,6 +205,17 @@ fun OwnerInputField(
             )
         )
     }
+}
+
+@Composable
+fun SectionHeaderOwner(title: String) {
+    Text(
+        text = title,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color.Gray,
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
 }
 
 @Composable

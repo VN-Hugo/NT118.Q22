@@ -35,7 +35,9 @@ class ExploreViewModel @Inject constructor(
             propertyRepository.searchProperties(query)
         }
     }.map { properties ->
-        ExploreState.Success(properties) as ExploreState
+        // Chỉ hiển thị những khách sạn đã được phê duyệt (APPROVED)
+        val approvedProperties = properties.filter { it.status == "APPROVED" }
+        ExploreState.Success(approvedProperties) as ExploreState
     }.onStart {
         emit(ExploreState.Loading)
     }.catch { e ->

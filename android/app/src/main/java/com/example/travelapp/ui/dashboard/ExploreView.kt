@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.travelapp.domain.model.Property
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,13 +92,13 @@ fun ExploreScreen(
         when (val state = exploreState) {
             is ExploreState.Loading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Color(0xFF1976D2))
                 }
             }
             is ExploreState.Success -> {
                 if (state.properties.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Không tìm thấy kết quả nào")
+                        Text("Không có khách sạn nào đã được duyệt.")
                     }
                 } else {
                     LazyVerticalGrid(
@@ -149,17 +150,20 @@ fun PropertyCard(property: Property, onClick: () -> Unit) {
     ) {
         Column {
             Box(modifier = Modifier.height(150.dp).fillMaxWidth()) {
+                // SỬA Ở ĐÂY: Lấy đúng ảnh Primary hoặc ảnh đầu tiên từ danh sách
                 val imageUrl = property.images.firstOrNull { it.isPrimary }?.url ?: property.images.firstOrNull()?.url
                 
-                if (imageUrl != null) {
+                if (imageUrl != null && imageUrl.isNotEmpty()) {
                     AsyncImage(
                         model = imageUrl,
-                        contentDescription = null,
+                        contentDescription = property.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Box(modifier = Modifier.fillMaxSize().background(Color.LightGray))
+                    Box(modifier = Modifier.fillMaxSize().background(Color.LightGray), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
+                    }
                 }
 
                 Surface(
@@ -188,13 +192,21 @@ fun PropertyCard(property: Property, onClick: () -> Unit) {
                     Text(property.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFB300), modifier = Modifier.size(12.dp))
-                        Text(property.averageRating.toString(), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 2.dp))
+                        Text("${property.averageRating}", fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 2.dp))
                     }
                 }
                 Text(property.desName, color = Color.Gray, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(4.dp))
+                
+                // Hiển thị giá từ phòng đầu tiên hoặc giá khởi điểm
+                val displayPrice = if (property.price > 0) {
+                    "đ${String.format(Locale.getDefault(), "%,.0f", property.price)}"
+                } else {
+                    "Chưa cập nhật"
+                }
+
                 Row {
-                    Text(text = "đ${String.format("%,.0f", property.price)}", fontWeight = FontWeight.ExtraBold, color = Color.Black)
+                    Text(text = displayPrice, fontWeight = FontWeight.ExtraBold, color = Color.Black)
                     Text(text = if(property.type == "hotel") "/đêm" else "/vé", color = Color.Gray, fontSize = 11.sp)
                 }
             }
