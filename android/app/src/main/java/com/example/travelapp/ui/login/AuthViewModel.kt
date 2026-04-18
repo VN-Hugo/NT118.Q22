@@ -39,9 +39,7 @@ class AuthViewModel @Inject constructor(
             authState = AuthState.Error("Vui lòng điền đầy đủ thông tin")
             return
         }
-
         authState = AuthState.Loading
-
         viewModelScope.launch {
             val success = loginUseCase(email, pass)
             if (success) {
@@ -74,14 +72,12 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun signUp(email: String, pass: String, name: String) {
+    fun signUp(email: String, pass: String, name: String, role: String) {
         authState = AuthState.Loading
-
         viewModelScope.launch {
-            val success = registerUseCase(email, pass, name)
-            if (success != null) {
-                // Sau khi đăng ký, mặc định role là USER
-                authState = AuthState.Success("USER")
+            val success = registerUseCase(email, pass, name, role)
+            if (success) {
+                authState = AuthState.Success(role)
             } else {
                 authState = AuthState.Error("Đăng ký thất bại")
             }
