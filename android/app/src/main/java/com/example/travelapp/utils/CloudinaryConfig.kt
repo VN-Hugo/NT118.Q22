@@ -7,9 +7,9 @@ import com.cloudinary.android.MediaManager
 object CloudinaryConfig {
     fun init(context: Context) {
         val config = mapOf(
-            "cloud_name" to BuildConfig.CLOUDINARY_CLOUD_NAME,
-            "api_key" to BuildConfig.CLOUDINARY_API_KEY,
-            "api_secret" to BuildConfig.CLOUDINARY_API_SECRET
+            "cloud_name" to Secrets.CLOUDINARY_CLOUD_NAME,
+            "api_key" to Secrets.CLOUDINARY_API_KEY,
+            "api_secret" to Secrets.CLOUDINARY_API_SECRET
         )
 
         try {
