@@ -1,6 +1,5 @@
 package com.example.travelapp.ui.owner
 
-import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import androidx.compose.ui.res.painterResource
+import com.example.travelapp.R
 
 private val BrandTealColor = Color(0xFF005D67)
 private val SoftGrayColor = Color(0xFFF2F4F5)
@@ -37,6 +38,7 @@ fun AddHotelScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    var isCityMenuExpanded by remember { mutableStateOf(false) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
@@ -99,12 +101,44 @@ fun AddHotelScreen(
                 onValueChange = { viewModel.address = it },
                 placeholder = "Số nhà, tên đường, phường/xã..."
             )
-            OwnerInputField(
-                label = "Thành phố",
-                value = viewModel.desName,
-                onValueChange = { viewModel.desName = it },
-                placeholder = "Ví dụ: Đà Lạt"
-            )
+
+            // Dropdown chọn thành phố
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Thành phố", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(8.dp))
+                ExposedDropdownMenuBox(
+                    expanded = isCityMenuExpanded,
+                    onExpandedChange = { isCityMenuExpanded = !isCityMenuExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = viewModel.desName,
+                        onValueChange = {},
+                        readOnly = true,
+                        placeholder = { Text("Chọn thành phố", color = Color.LightGray) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCityMenuExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = BrandTealColor,
+                            unfocusedBorderColor = Color.LightGray
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = isCityMenuExpanded,
+                        onDismissRequest = { isCityMenuExpanded = false }
+                    ) {
+                        viewModel.provinceList.forEach { city ->
+                            DropdownMenuItem(
+                                text = { Text(city) },
+                                onClick = {
+                                    viewModel.desName = city
+                                    isCityMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
 
             SectionHeaderOwner("MÔ TẢ KHÁCH SẠN")
             OwnerInputField(
@@ -126,7 +160,12 @@ fun AddHotelScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(40.dp))
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_add_photo), // Sử dụng painterResource
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(40.dp)
+                        )
                         Text("Bấm để chọn ảnh từ thư viện", color = Color.Gray, fontSize = 12.sp)
                     }
                 }
@@ -185,7 +224,7 @@ fun AddHotelScreen(
 @Composable
 fun OwnerInputField(
     label: String,
-    value: TextFieldValue, // Sử dụng TextFieldValue thay vì String
+    value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     placeholder: String,
     isMultiLine: Boolean = false

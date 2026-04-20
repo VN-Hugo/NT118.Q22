@@ -7,6 +7,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cloudinary.android.MediaManager
+import com.cloudinary.android.callback.ErrorInfo
+import com.cloudinary.android.callback.UploadCallback
 import com.example.travelapp.domain.model.Property
 import com.example.travelapp.domain.model.PropertyImage
 import com.example.travelapp.domain.repository.PropertyRepository
@@ -17,6 +20,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 sealed class AddHotelState {
     object Idle : AddHotelState()
@@ -31,10 +36,9 @@ class AddHotelViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
 
-    // Chuyển sang TextFieldValue để hỗ trợ bộ gõ tiếng Việt tốt hơn
     var hotelName by mutableStateOf(TextFieldValue(""))
     var address by mutableStateOf(TextFieldValue(""))
-    var desName by mutableStateOf(TextFieldValue(""))
+    var desName by mutableStateOf("") // Changed to String for dropdown selection
     var description by mutableStateOf(TextFieldValue(""))
     
     var selectedTags by mutableStateOf(setOf<String>())
@@ -42,6 +46,43 @@ class AddHotelViewModel @Inject constructor(
 
     private val _state = MutableStateFlow<AddHotelState>(AddHotelState.Idle)
     val state = _state.asStateFlow()
+
+    val provinceList = listOf(
+        "Thành phố Hà Nội",
+        "Thành phố Hồ Chí Minh",
+        "Thành phố Hải Phòng",
+        "Thành phố Đà Nẵng",
+        "Thành phố Cần Thơ",
+        "Thành phố Huế",
+        "Tỉnh An Giang",
+        "Tỉnh Bắc Ninh",
+        "Tỉnh Cao Bằng",
+        "Tỉnh Cà Mau",
+        "Tỉnh Điện Biên",
+        "Tỉnh Đắk Lắk",
+        "Tỉnh Đồng Nai",
+        "Tỉnh Đồng Tháp",
+        "Tỉnh Gia Lai",
+        "Tỉnh Hà Tĩnh",
+        "Tỉnh Hưng Yên",
+        "Tỉnh Khánh Hòa",
+        "Tỉnh Lai Châu",
+        "Tỉnh Lào Cai",
+        "Tỉnh Lâm Đồng",
+        "Tỉnh Lạng Sơn",
+        "Tỉnh Nghệ An",
+        "Tỉnh Ninh Bình",
+        "Tỉnh Phú Thọ",
+        "Tỉnh Quảng Ngãi",
+        "Tỉnh Quảng Ninh",
+        "Tỉnh Quảng Trị",
+        "Tỉnh Sơn La",
+        "Tỉnh Thanh Hóa",
+        "Tỉnh Thái Nguyên",
+        "Tỉnh Tuyên Quang",
+        "Tỉnh Tây Ninh",
+        "Tỉnh Vĩnh Long"
+    )
 
     fun onTagToggle(tag: String) {
         selectedTags = if (selectedTags.contains(tag)) {
@@ -55,10 +96,29 @@ class AddHotelViewModel @Inject constructor(
         selectedImages = uris
     }
 
+    private suspend fun uploadImageToCloudinary(uri: Uri): String? = suspendCoroutine { continuation ->
+        MediaManager.get().upload(uri)
+            .option("upload_preset", "travel_app_preset")
+            .callback(object : UploadCallback {
+                override fun onStart(requestId: String?) {}
+                override fun onProgress(requestId: String?, bytes: Long, totalBytes: Long) {}
+                override fun onSuccess(requestId: String?, resultData: Map<*, *>?) {
+                    val imageUrl = resultData?.get("secure_url") as? String
+                    continuation.resume(imageUrl)
+                }
+                override fun onError(requestId: String?, error: ErrorInfo?) {
+                    continuation.resume(null)
+                }
+                override fun onReschedule(requestId: String?, error: ErrorInfo?) {
+                    continuation.resume(null)
+                }
+            }).dispatch()
+    }
+
     fun saveHotel() {
         val ownerId = userRepository.getCurrentUserId() ?: return
-        if (hotelName.text.isEmpty() || address.text.isEmpty()) {
-            _state.value = AddHotelState.Error("Vui lòng điền tên và địa chỉ")
+        if (hotelName.text.isEmpty() || address.text.isEmpty() || desName.isEmpty()) {
+            _state.value = AddHotelState.Error("Vui lòng điền đầy đủ thông tin")
             return
         }
 
@@ -66,20 +126,21 @@ class AddHotelViewModel @Inject constructor(
             _state.value = AddHotelState.Loading
             
             try {
+                // 1. Upload images to Cloudinary
                 val uploadedImages = mutableListOf<PropertyImage>()
                 selectedImages.forEachIndexed { index, uri ->
-                    val path = "properties/${UUID.randomUUID()}"
-                    val downloadUrl = propertyRepository.uploadPropertyImage(path, uri)
+                    val downloadUrl = uploadImageToCloudinary(uri)
                     if (downloadUrl != null) {
                         uploadedImages.add(PropertyImage(url = downloadUrl, isPrimary = index == 0))
                     }
                 }
 
+                // 2. Save property details
                 val property = Property(
                     ownerId = ownerId,
                     name = hotelName.text,
                     address = address.text,
-                    desName = desName.text,
+                    desName = desName,
                     description = description.text,
                     tags = selectedTags.toList(),
                     images = uploadedImages,

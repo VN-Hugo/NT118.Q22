@@ -26,9 +26,9 @@ class MainActivity : ComponentActivity() {
 
         // 2. Chạy hàm tạo dữ liệu mẫu trong Coroutine Scope
         // Bạn chỉ cần chạy dòng này MỘT LẦN DUY NHẤT rồi có thể xóa đi hoặc comment lại
-        lifecycleScope.launch {
-            firebaseMockData.createMockData()
-        }
+//        lifecycleScope.launch {
+//            firebaseMockData.createMockData()
+//        }
 
         setContent {
             TravelAppTheme {
