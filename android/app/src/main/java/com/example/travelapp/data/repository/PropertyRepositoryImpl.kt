@@ -1,14 +1,11 @@
 package com.example.travelapp.data.repository
 
 import android.net.Uri
-import com.example.travelapp.data.mapper.toDTO
-import com.example.travelapp.data.mapper.toDomain
-import com.example.travelapp.data.remote.dto.PropertyDTO
-import com.example.travelapp.domain.model.Booking
-import com.example.travelapp.domain.model.Property
-import com.example.travelapp.domain.model.RoomType
-import com.example.travelapp.domain.repository.PropertyRepository
+import com.example.travelapp.data.model.Booking
+import com.example.travelapp.data.model.Property
+import com.example.travelapp.data.model.RoomType
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -16,18 +13,18 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
-class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
+class PropertyRepositoryImpl @Inject constructor(
+    private val db: FirebaseFirestore,
+    private val storage: FirebaseStorage
+) : PropertyRepository {
 
-    private val db = FirebaseFirestore.getInstance()
-    private val storage = FirebaseStorage.getInstance()
     private val propertiesCollection = db.collection("Properties")
     private val bookingsCollection = db.collection("Bookings")
 
     override fun getProperties(type: String?): Flow<List<Property>> = callbackFlow {
-        val query = if (type != null) {
-            propertiesCollection.whereEqualTo("type", type)
-        } else {
-            propertiesCollection
+        var query: Query = propertiesCollection.whereEqualTo("status", "APPROVED")
+        if (type != null) {
+            query = query.whereEqualTo("type", type)
         }
         
         val subscription = query.addSnapshotListener { snapshot, error ->
@@ -35,26 +32,26 @@ class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
                 close(error)
                 return@addSnapshotListener
             }
-            if (snapshot != null) {
-                val propertyDTOs = snapshot.toObjects(PropertyDTO::class.java)
-                val properties = propertyDTOs.map { it.toDomain() }
+            snapshot?.let {
+                val properties = it.toObjects(Property::class.java)
                 trySend(properties)
             }
         }
         awaitClose { subscription.remove() }
     }
-    
+
     override suspend fun getPropertyById(proId: String): Property? {
         return try {
             val doc = propertiesCollection.document(proId).get().await()
-            doc.toObject(PropertyDTO::class.java)?.toDomain()
+            doc.toObject(Property::class.java)
         } catch (e: Exception) {
             null
         }
     }
-    
+
     override fun searchProperties(query: String): Flow<List<Property>> = callbackFlow {
         val subscription = propertiesCollection
+            .whereEqualTo("status", "APPROVED")
             .whereGreaterThanOrEqualTo("name", query)
             .whereLessThanOrEqualTo("name", query + "\uf8ff")
             .addSnapshotListener { snapshot, error ->
@@ -62,9 +59,8 @@ class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
                     close(error)
                     return@addSnapshotListener
                 }
-                if (snapshot != null) {
-                    val propertyDTOs = snapshot.toObjects(PropertyDTO::class.java)
-                    val properties = propertyDTOs.map { it.toDomain() }
+                snapshot?.let {
+                    val properties = it.toObjects(Property::class.java)
                     trySend(properties)
                 }
             }
@@ -73,14 +69,13 @@ class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
 
     override suspend fun saveProperty(property: Property): String? {
         return try {
-            val dto = property.toDTO()
-            val docRef = if (dto.proId.isEmpty()) {
+            val docRef = if (property.proId.isEmpty()) {
                 propertiesCollection.document()
             } else {
-                propertiesCollection.document(dto.proId)
+                propertiesCollection.document(property.proId)
             }
-            val finalDto = dto.copy(proId = docRef.id)
-            docRef.set(finalDto).await()
+            val finalProperty = property.copy(proId = docRef.id)
+            docRef.set(finalProperty).await()
             docRef.id
         } catch (e: Exception) {
             null
@@ -127,8 +122,8 @@ class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
                     close(error)
                     return@addSnapshotListener
                 }
-                if (snapshot != null) {
-                    val rooms = snapshot.toObjects(RoomType::class.java)
+                snapshot?.let {
+                    val rooms = it.toObjects(RoomType::class.java)
                     trySend(rooms)
                 }
             }

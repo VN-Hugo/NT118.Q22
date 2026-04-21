@@ -18,8 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.travelapp.domain.model.Property
-import java.util.Locale
+import com.example.travelapp.data.model.Property
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

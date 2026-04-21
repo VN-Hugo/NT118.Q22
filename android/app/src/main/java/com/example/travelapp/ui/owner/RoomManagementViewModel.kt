@@ -3,8 +3,8 @@ package com.example.travelapp.ui.owner
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.travelapp.domain.model.RoomType
-import com.example.travelapp.domain.repository.PropertyRepository
+import com.example.travelapp.data.model.RoomType
+import com.example.travelapp.data.repository.PropertyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

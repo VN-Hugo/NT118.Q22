@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.travelapp.domain.model.User
+import com.example.travelapp.data.model.User
 
 @Composable
 fun ProfileScreen(

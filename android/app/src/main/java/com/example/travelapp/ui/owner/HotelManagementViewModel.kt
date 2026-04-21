@@ -2,9 +2,9 @@ package com.example.travelapp.ui.owner
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.travelapp.domain.model.Property
-import com.example.travelapp.domain.repository.PropertyRepository
-import com.example.travelapp.domain.repository.UserRepository
+import com.example.travelapp.data.model.Property
+import com.example.travelapp.data.repository.PropertyRepository
+import com.example.travelapp.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

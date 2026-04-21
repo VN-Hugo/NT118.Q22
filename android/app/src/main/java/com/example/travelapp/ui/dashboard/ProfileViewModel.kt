@@ -11,8 +11,9 @@ import androidx.lifecycle.viewModelScope
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.ErrorInfo
 import com.cloudinary.android.callback.UploadCallback
-import com.example.travelapp.domain.model.User
-import com.example.travelapp.domain.repository.UserRepository
+import com.example.travelapp.data.model.User
+import com.example.travelapp.data.repository.UserRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,16 +45,34 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun fetchUser(isInitial: Boolean) {
-        val uid = userRepository.getCurrentUserId() ?: return
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        val uid = currentUser?.uid ?: return
+        
         viewModelScope.launch {
             if (isInitial) _profileState.value = ProfileState.Loading
-            val user = userRepository.getUserProfile(uid)
+            
+            // 1. Cố gắng lấy từ Firestore
+            var user = userRepository.getUserProfile(uid)
+            
+            // 2. Nếu Firestore chưa có (user mới), dùng dữ liệu từ Auth
+            if (user == null && currentUser != null) {
+                user = User(
+                    uid = uid,
+                    fullName = currentUser.displayName ?: "",
+                    email = currentUser.email ?: "",
+                    avatarUrl = currentUser.photoUrl?.toString() ?: ""
+                )
+                // Lưu luôn vào Firestore để lần sau không bị null nữa
+                userRepository.saveUser(user)
+            }
+
             if (user != null) {
                 _profileState.value = ProfileState.Success(user)
+                // Khởi tạo các ô nhập liệu
                 if (editFullName.text.isEmpty()) editFullName = TextFieldValue(user.fullName)
                 if (editPhoneNumber.text.isEmpty()) editPhoneNumber = TextFieldValue(user.phoneNumber)
             } else {
-                _profileState.value = ProfileState.Error("Không tìm thấy thông tin")
+                _profileState.value = ProfileState.Error("Không thể xác định thông tin người dùng")
             }
         }
     }
@@ -62,7 +81,6 @@ class ProfileViewModel @Inject constructor(
         val uid = userRepository.getCurrentUserId() ?: return
         _isUploading.value = true
 
-        // Upload lên Cloudinary bằng Preset
         MediaManager.get().upload(uri)
             .option("upload_preset", "travel_app_preset")
             .callback(object : UploadCallback {
@@ -80,7 +98,6 @@ class ProfileViewModel @Inject constructor(
 
                 override fun onError(requestId: String?, error: ErrorInfo?) {
                     _isUploading.value = false
-                    // Xử lý lỗi nếu cần
                 }
 
                 override fun onReschedule(requestId: String?, error: ErrorInfo?) {}

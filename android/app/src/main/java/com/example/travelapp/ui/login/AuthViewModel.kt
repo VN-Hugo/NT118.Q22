@@ -8,11 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-import com.example.travelapp.domain.usecase.LoginUseCase
-import com.example.travelapp.domain.usecase.RegisterUseCase
-import com.example.travelapp.domain.usecase.SignInWithGoogleUseCase
-import com.example.travelapp.domain.repository.UserRepository
-import com.google.firebase.auth.FirebaseAuth
+import com.example.travelapp.data.model.User
+import com.example.travelapp.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -25,9 +22,6 @@ sealed class AuthState {
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val loginUseCase: LoginUseCase,
-    private val registerUseCase: RegisterUseCase,
-    private val signInWithGoogleUseCase: SignInWithGoogleUseCase,
     private val userRepository: UserRepository
 ) : ViewModel() {
 
@@ -41,7 +35,7 @@ class AuthViewModel @Inject constructor(
         }
         authState = AuthState.Loading
         viewModelScope.launch {
-            val success = loginUseCase(email, pass)
+            val success = userRepository.loginUser(email, pass)
             if (success) {
                 fetchRoleAndSuccess()
             } else {
@@ -53,7 +47,7 @@ class AuthViewModel @Inject constructor(
     fun signInWithGoogle(idToken: String) {
         authState = AuthState.Loading
         viewModelScope.launch {
-            val success = signInWithGoogleUseCase(idToken)
+            val success = userRepository.signInWithGoogle(idToken)
             if (success) {
                 fetchRoleAndSuccess()
             } else {
@@ -63,7 +57,7 @@ class AuthViewModel @Inject constructor(
     }
 
     private suspend fun fetchRoleAndSuccess() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        val uid = userRepository.getCurrentUserId()
         if (uid != null) {
             val user = userRepository.getUserProfile(uid)
             authState = AuthState.Success(user?.role ?: "USER")
@@ -75,11 +69,25 @@ class AuthViewModel @Inject constructor(
     fun signUp(email: String, pass: String, name: String, role: String) {
         authState = AuthState.Loading
         viewModelScope.launch {
-            val success = registerUseCase(email, pass, name, role)
-            if (success) {
-                authState = AuthState.Success(role)
+            // 1. Đăng ký tài khoản trên Firebase Auth
+            val uid = userRepository.registerUser(email, pass)
+            if (uid != null) {
+                // 2. Tạo đối tượng User để lưu vào Firestore
+                val user = User(
+                    uid = uid,
+                    fullName = name,
+                    email = email,
+                    role = role
+                )
+                // 3. Lưu thông tin User
+                val saved = userRepository.saveUser(user)
+                if (saved) {
+                    authState = AuthState.Success(role)
+                } else {
+                    authState = AuthState.Error("Lưu thông tin người dùng thất bại")
+                }
             } else {
-                authState = AuthState.Error("Đăng ký thất bại")
+                authState = AuthState.Error("Đăng ký tài khoản thất bại")
             }
         }
     }

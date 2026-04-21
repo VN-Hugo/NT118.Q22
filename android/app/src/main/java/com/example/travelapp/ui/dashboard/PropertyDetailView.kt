@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.travelapp.domain.model.Property
-import com.example.travelapp.domain.model.RoomType
+import com.example.travelapp.data.model.Property
+import com.example.travelapp.data.model.RoomType
 import java.text.SimpleDateFormat
 import java.util.*
 

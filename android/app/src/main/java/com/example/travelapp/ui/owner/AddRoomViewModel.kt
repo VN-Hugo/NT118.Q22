@@ -8,14 +8,13 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.travelapp.domain.model.RoomType
-import com.example.travelapp.domain.repository.PropertyRepository
+import com.example.travelapp.data.model.RoomType
+import com.example.travelapp.data.repository.PropertyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.*
 import javax.inject.Inject
 
 sealed class AddRoomState {

@@ -1,7 +1,6 @@
 package com.example.travelapp.ui.owner
 
 import android.widget.Toast
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.travelapp.domain.model.RoomType
+import com.example.travelapp.data.model.RoomType
 import java.util.Locale
 
 private val BrandTealColor = Color(0xFF005D67)

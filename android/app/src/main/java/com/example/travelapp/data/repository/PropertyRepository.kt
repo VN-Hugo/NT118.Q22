@@ -1,9 +1,9 @@
-package com.example.travelapp.domain.repository
+package com.example.travelapp.data.repository
 
 import android.net.Uri
-import com.example.travelapp.domain.model.Booking
-import com.example.travelapp.domain.model.Property
-import com.example.travelapp.domain.model.RoomType
+import com.example.travelapp.data.model.Booking
+import com.example.travelapp.data.model.Property
+import com.example.travelapp.data.model.RoomType
 import kotlinx.coroutines.flow.Flow
 
 interface PropertyRepository {

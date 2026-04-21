@@ -1,4 +1,4 @@
-package com.example.travelapp.domain.model
+package com.example.travelapp.data.model
 
 data class RoomType(
     val roomTypeId: String = "",
@@ -6,10 +6,5 @@ data class RoomType(
     val price: Double = 0.0,
     val totalRooms: Int = 0,
     val amenities: List<String> = emptyList(),
-    val beds: List<BedInfo> = emptyList()
-)
-
-data class BedInfo(
-    val bedName: String = "",
-    val count: Int = 1
+    val images: List<String> = emptyList() // Bổ sung ảnh riêng cho từng loại phòng
 )

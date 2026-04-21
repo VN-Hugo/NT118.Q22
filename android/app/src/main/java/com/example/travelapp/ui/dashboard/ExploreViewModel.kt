@@ -2,11 +2,10 @@ package com.example.travelapp.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.travelapp.domain.model.Property
-import com.example.travelapp.domain.repository.PropertyRepository
+import com.example.travelapp.data.model.Property
+import com.example.travelapp.data.repository.PropertyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 sealed class ExploreState {
@@ -36,6 +35,7 @@ class ExploreViewModel @Inject constructor(
         }
     }.map { properties ->
         // Chỉ hiển thị những khách sạn đã được phê duyệt (APPROVED)
+        // Lưu ý: RepositoryImpl đã lọc ở server, nhưng lọc lại ở đây cho chắc chắn hoặc xử lý thêm logic UI
         val approvedProperties = properties.filter { it.status == "APPROVED" }
         ExploreState.Success(approvedProperties) as ExploreState
     }.onStart {
