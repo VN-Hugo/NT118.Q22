@@ -25,6 +25,7 @@ import java.util.Locale
 @Composable
 fun HotelManagementScreen(
     onAddHotelClick: () -> Unit,
+    onEditHotelClick: (String) -> Unit,
     onManageRoomsClick: (String) -> Unit,
     viewModel: HotelManagementViewModel = hiltViewModel()
 ) {
@@ -117,7 +118,12 @@ fun HotelManagementScreen(
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
                             items(filteredHotels) { hotel ->
-                                HotelManagementCard(hotel, onClick = { onManageRoomsClick(hotel.proId) })
+                                HotelManagementCard(
+                                    hotel = hotel,
+                                    onEditClick = { onEditHotelClick(hotel.proId) },
+                                    onDeleteClick = { viewModel.deleteHotel(hotel.proId) },
+                                    onManageRoomsClick = { onManageRoomsClick(hotel.proId) }
+                                )
                             }
                             item { Spacer(modifier = Modifier.height(80.dp)) }
                         }
@@ -158,12 +164,17 @@ fun QuoteBanner() {
 }
 
 @Composable
-fun HotelManagementCard(hotel: Property, onClick: () -> Unit) {
+fun HotelManagementCard(
+    hotel: Property,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onManageRoomsClick: () -> Unit
+) {
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(4.dp),
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+        modifier = Modifier.fillMaxWidth().clickable { onManageRoomsClick() }
     ) {
         Column {
             Box(modifier = Modifier.fillMaxWidth().height(180.dp)) {
@@ -226,31 +237,14 @@ fun HotelManagementCard(hotel: Property, onClick: () -> Unit) {
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Logic giá
-                    val priceText = if (hotel.price > 0) {
-                        "đ${String.format(Locale.getDefault(), "%,.0f", hotel.price)}"
-                    } else {
-                        "Chưa có giá"
+                    IconButton(onClick = onEditClick) {
+                        Icon(Icons.Default.Edit, contentDescription = "Sửa", tint = Color.Gray)
                     }
-                    
-                    Text(
-                        text = priceText,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF005D67)
-                    )
-                    
-                    Button(
-                        onClick = onClick,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F3F4)),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Quản lý phòng", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Icon(Icons.Default.Face, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                    IconButton(onClick = onDeleteClick) {
+                        Icon(Icons.Default.Delete, contentDescription = "Xóa", tint = Color.Red)
                     }
                 }
             }

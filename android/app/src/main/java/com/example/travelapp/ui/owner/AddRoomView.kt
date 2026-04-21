@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -22,7 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import com.example.travelapp.R
+
 private val BrandTealColor = Color(0xFF005D67)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,7 +45,7 @@ fun AddRoomScreen(
 
     LaunchedEffect(state) {
         if (state is AddRoomState.Success) {
-            Toast.makeText(context, "Thêm phòng thành công!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Đã lưu thông tin phòng!", Toast.LENGTH_SHORT).show()
             onBack()
         } else if (state is AddRoomState.Error) {
             Toast.makeText(context, (state as AddRoomState.Error).message, Toast.LENGTH_SHORT).show()
@@ -52,7 +55,7 @@ fun AddRoomScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Thêm hạng phòng", fontWeight = FontWeight.Bold) },
+                title = { Text(if (viewModel.roomTypeId == null) "Thêm hạng phòng" else "Chỉnh sửa phòng", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -105,16 +108,25 @@ fun AddRoomScreen(
                 }
             }
 
-            OwnerInputField(
-                label = "Tiện ích phòng",
-                value = viewModel.amenitiesText,
-                onValueChange = { viewModel.amenitiesText = it },
-                placeholder = "Wifi, Điều hòa, Bồn tắm... (ngăn cách bởi dấu phẩy)"
-            )
+            // Section 2: Amenities Selection (Updated to List)
+            Text("Tiện ích phòng", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            FlowRowOwner(spacing = 8.dp) {
+                viewModel.availableAmenities.forEach { amenity ->
+                    val isSelected = viewModel.selectedAmenities.contains(amenity)
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { viewModel.onAmenityToggle(amenity) },
+                        label = { Text(amenity) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = BrandTealColor,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+            }
 
-            // Section 2: Photo Upload
+            // Section 3: Photo Upload
             Text("Hình ảnh phòng", fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            
             if (viewModel.selectedImages.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -125,7 +137,7 @@ fun AddRoomScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(40.dp))
+                        Icon(painterResource(id = R.drawable.ic_add_photo), contentDescription = null, tint = Color.Gray, modifier = Modifier.size(40.dp))
                         Text("Bấm để chọn ảnh từ thư viện", color = Color.Gray, fontSize = 12.sp)
                     }
                 }
@@ -144,7 +156,6 @@ fun AddRoomScreen(
                             contentScale = ContentScale.Crop
                         )
                     }
-                    // Add more button
                     Box(
                         modifier = Modifier
                             .size(120.dp)
@@ -154,9 +165,6 @@ fun AddRoomScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, tint = BrandTealColor)
                     }
-                }
-                TextButton(onClick = { viewModel.onImagesSelected(emptyList()) }) {
-                    Text("Xóa tất cả ảnh", color = Color.Red, fontSize = 12.sp)
                 }
             }
 

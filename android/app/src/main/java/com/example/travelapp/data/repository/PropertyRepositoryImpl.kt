@@ -4,6 +4,7 @@ import android.net.Uri
 import com.example.travelapp.data.mapper.toDTO
 import com.example.travelapp.data.mapper.toDomain
 import com.example.travelapp.data.remote.dto.PropertyDTO
+import com.example.travelapp.domain.model.Booking
 import com.example.travelapp.domain.model.Property
 import com.example.travelapp.domain.model.RoomType
 import com.example.travelapp.domain.repository.PropertyRepository
@@ -20,6 +21,7 @@ class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
     private val propertiesCollection = db.collection("Properties")
+    private val bookingsCollection = db.collection("Bookings")
 
     override fun getProperties(type: String?): Flow<List<Property>> = callbackFlow {
         val query = if (type != null) {
@@ -69,7 +71,7 @@ class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
         awaitClose { subscription.remove() }
     }
 
-    override suspend fun saveProperty(property: Property): Boolean {
+    override suspend fun saveProperty(property: Property): String? {
         return try {
             val dto = property.toDTO()
             val docRef = if (dto.proId.isEmpty()) {
@@ -79,6 +81,15 @@ class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
             }
             val finalDto = dto.copy(proId = docRef.id)
             docRef.set(finalDto).await()
+            docRef.id
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override suspend fun deleteProperty(proId: String): Boolean {
+        return try {
+            propertiesCollection.document(proId).delete().await()
             true
         } catch (e: Exception) {
             false
@@ -94,6 +105,15 @@ class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
             }
             val finalRoom = roomType.copy(roomTypeId = roomRef.id)
             roomRef.set(finalRoom).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override suspend fun deleteRoomType(proId: String, roomTypeId: String): Boolean {
+        return try {
+            propertiesCollection.document(proId).collection("RoomTypes").document(roomTypeId).delete().await()
             true
         } catch (e: Exception) {
             false
@@ -122,6 +142,50 @@ class PropertyRepositoryImpl @Inject constructor() : PropertyRepository {
             ref.downloadUrl.await().toString()
         } catch (e: Exception) {
             null
+        }
+    }
+
+    override suspend fun checkRoomAvailability(proId: String, roomTypeId: String, startDate: Long, endDate: Long): Int {
+        return try {
+            val roomDoc = propertiesCollection.document(proId)
+                .collection("RoomTypes").document(roomTypeId).get().await()
+            val total = roomDoc.getLong("totalRooms")?.toInt() ?: 0
+
+            val bookingsSnap = bookingsCollection
+                .whereEqualTo("proId", proId)
+                .whereEqualTo("hotelBooking.roomTypeId", roomTypeId)
+                .whereIn("status", listOf("confirmed", "pending"))
+                .get().await()
+
+            val occupiedRooms = bookingsSnap.documents.filter { doc ->
+                val bStart = doc.getLong("startDate") ?: 0L
+                val bEnd = doc.getLong("endDate") ?: 0L
+                startDate < bEnd && endDate > bStart
+            }.sumOf { (it.get("hotelBooking.quantity") as? Long)?.toInt() ?: 1 }
+
+            (total - occupiedRooms).coerceAtLeast(0)
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    override suspend fun createBooking(booking: Booking): Boolean {
+        return try {
+            val docRef = bookingsCollection.document()
+            val finalBooking = booking.copy(bookId = docRef.id)
+            docRef.set(finalBooking).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override suspend fun updatePropertyStatus(proId: String, status: String): Boolean {
+        return try {
+            propertiesCollection.document(proId).update("status", status).await()
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 }

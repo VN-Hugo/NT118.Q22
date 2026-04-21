@@ -7,6 +7,7 @@ import com.example.travelapp.domain.repository.PropertyRepository
 import com.example.travelapp.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 sealed class HotelManagementState {
@@ -21,7 +22,6 @@ class HotelManagementViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
 
-    // Lấy ID người dùng hiện tại và lắng nghe danh sách khách sạn tương ứng
     val hotelState: StateFlow<HotelManagementState> = flow {
         emit(userRepository.getCurrentUserId())
     }.flatMapLatest { ownerId ->
@@ -29,7 +29,6 @@ class HotelManagementViewModel @Inject constructor(
             flowOf(HotelManagementState.Error("Người dùng chưa đăng nhập"))
         } else {
             propertyRepository.getProperties().map { allProperties ->
-                // Lọc chính xác theo ownerId đã lưu trên Firebase
                 val ownerHotels = allProperties.filter { it.ownerId == ownerId }
                 HotelManagementState.Success(ownerHotels)
             }
@@ -43,4 +42,10 @@ class HotelManagementViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = HotelManagementState.Loading
     )
+
+    fun deleteHotel(proId: String) {
+        viewModelScope.launch {
+            propertyRepository.deleteProperty(proId)
+        }
+    }
 }

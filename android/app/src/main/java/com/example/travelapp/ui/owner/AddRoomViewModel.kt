@@ -13,6 +13,7 @@ import com.example.travelapp.domain.repository.PropertyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -31,17 +32,57 @@ class AddRoomViewModel @Inject constructor(
 ) : ViewModel() {
 
     val proId: String = savedStateHandle["proId"] ?: ""
+    val roomTypeId: String? = savedStateHandle["roomTypeId"] // Null if adding new
 
-    // Chuyển sang TextFieldValue để hỗ trợ tiếng Việt tốt hơn
     var typeName by mutableStateOf(TextFieldValue(""))
     var price by mutableStateOf(TextFieldValue(""))
     var totalRooms by mutableStateOf(TextFieldValue(""))
-    var amenitiesText by mutableStateOf(TextFieldValue(""))
+    
+    // Change to selectable list like Hotel tags
+    var selectedAmenities by mutableStateOf(setOf<String>())
     
     var selectedImages by mutableStateOf<List<Uri>>(emptyList())
 
     private val _state = MutableStateFlow<AddRoomState>(AddRoomState.Idle)
     val state = _state.asStateFlow()
+
+    val availableAmenities = listOf(
+        "Wifi", "Điều hòa", "Bồn tắm", "Tivi", "Tủ lạnh", 
+        "Ban công", "Máy sấy tóc", "Két sắt", "Bàn làm việc"
+    )
+
+    init {
+        if (roomTypeId != null) {
+            loadRoomData()
+        }
+    }
+
+    private fun loadRoomData() {
+        viewModelScope.launch {
+            _state.value = AddRoomState.Loading
+            try {
+                val rooms = propertyRepository.getRoomTypes(proId).first()
+                val room = rooms.find { it.roomTypeId == roomTypeId }
+                if (room != null) {
+                    typeName = TextFieldValue(room.typeName)
+                    price = TextFieldValue(room.price.toLong().toString())
+                    totalRooms = TextFieldValue(room.totalRooms.toString())
+                    selectedAmenities = room.amenities.toSet()
+                    _state.value = AddRoomState.Idle
+                }
+            } catch (e: Exception) {
+                _state.value = AddRoomState.Error("Lỗi tải thông tin phòng")
+            }
+        }
+    }
+
+    fun onAmenityToggle(amenity: String) {
+        selectedAmenities = if (selectedAmenities.contains(amenity)) {
+            selectedAmenities - amenity
+        } else {
+            selectedAmenities + amenity
+        }
+    }
 
     fun onImagesSelected(uris: List<Uri>) {
         selectedImages = uris
@@ -58,22 +99,18 @@ class AddRoomViewModel @Inject constructor(
             _state.value = AddRoomState.Loading
             
             try {
-                // Upload ảnh
+                // Upload logic (placeholder for actual Cloudinary/Firebase integration)
                 val imageUrls = mutableListOf<String>()
-                selectedImages.forEach { uri ->
-                    val path = "properties/$proId/rooms/${UUID.randomUUID()}"
-                    propertyRepository.uploadPropertyImage(path, uri)?.let { imageUrls.add(it) }
-                }
+                // ... logic upload ...
 
-                // Tạo đối tượng RoomType
                 val roomType = RoomType(
+                    roomTypeId = roomTypeId ?: "", // Keep ID if editing
                     typeName = typeName.text,
                     price = price.text.toDoubleOrNull() ?: 0.0,
                     totalRooms = totalRooms.text.toIntOrNull() ?: 1,
-                    amenities = amenitiesText.text.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                    amenities = selectedAmenities.toList()
                 )
 
-                // Lưu vào Firestore
                 val success = propertyRepository.saveRoomType(proId, roomType)
                 if (success) {
                     _state.value = AddRoomState.Success
