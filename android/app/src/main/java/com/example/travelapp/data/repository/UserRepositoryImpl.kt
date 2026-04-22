@@ -4,8 +4,12 @@ import android.net.Uri
 import com.example.travelapp.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -63,6 +67,17 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getUserFlow(uid: String): Flow<User?> = callbackFlow {
+        val subscription = usersCollection.document(uid).addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            trySend(snapshot?.toObject(User::class.java))
+        }
+        awaitClose { subscription.remove() }
+    }
+
     override suspend fun logout() {
         auth.signOut()
     }
@@ -94,6 +109,25 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun updateProfile(uid: String, updates: Map<String, Any>): Boolean {
         return try {
             usersCollection.document(uid).update(updates).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override suspend fun toggleFavorite(userId: String, propertyId: String): Boolean {
+        return try {
+            val userRef = usersCollection.document(userId)
+            val doc = userRef.get().await()
+            val user = doc.toObject(User::class.java)
+            val favorites = user?.favoriteIds ?: emptyList()
+            
+            val isFavorite = favorites.contains(propertyId)
+            if (isFavorite) {
+                userRef.update("favoriteIds", FieldValue.arrayRemove(propertyId)).await()
+            } else {
+                userRef.update("favoriteIds", FieldValue.arrayUnion(propertyId)).await()
+            }
             true
         } catch (e: Exception) {
             false
