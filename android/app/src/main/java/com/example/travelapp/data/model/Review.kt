@@ -1,4 +1,4 @@
-package com.example.travelapp.domain.model
+package com.example.travelapp.data.model
 
 data class Review(
     val reviewId: String = "",

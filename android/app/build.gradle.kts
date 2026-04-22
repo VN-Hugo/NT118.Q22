@@ -77,4 +77,6 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.5.1")
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+    //Cloudinary
+    implementation("com.cloudinary:cloudinary-android:3.1.2")
 }

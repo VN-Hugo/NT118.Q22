@@ -1,23 +1,24 @@
 package com.example.travelapp.data.repository
 
 import android.net.Uri
-import com.example.travelapp.data.remote.dto.UserDTO
-import com.example.travelapp.data.mapper.toDTO
-import com.example.travelapp.data.mapper.toDomain
-import com.example.travelapp.domain.model.User
-import com.example.travelapp.domain.repository.UserRepository
+import com.example.travelapp.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
-class UserRepositoryImpl @Inject constructor() : UserRepository {
+class UserRepositoryImpl @Inject constructor(
+    private val auth: FirebaseAuth,
+    private val db: FirebaseFirestore,
+    private val storage: FirebaseStorage
+) : UserRepository {
 
-    private val db = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
-    private val storage = FirebaseStorage.getInstance()
     private val usersCollection = db.collection("Users")
 
     override suspend fun loginUser(email: String, pass: String): Boolean {
@@ -50,8 +51,7 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
 
     override suspend fun saveUser(user: User): Boolean {
         return try {
-            val dto = user.toDTO()
-            usersCollection.document(dto.uid).set(dto).await()
+            usersCollection.document(user.uid).set(user).await()
             true
         } catch (e: Exception) {
             false
@@ -61,10 +61,21 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
     override suspend fun getUserProfile(uid: String): User? {
         return try {
             val doc = usersCollection.document(uid).get().await()
-            doc.toObject(UserDTO::class.java)?.toDomain()
+            doc.toObject(User::class.java)
         } catch (e: Exception) {
             null
         }
+    }
+
+    override fun getUserFlow(uid: String): Flow<User?> = callbackFlow {
+        val subscription = usersCollection.document(uid).addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            trySend(snapshot?.toObject(User::class.java))
+        }
+        awaitClose { subscription.remove() }
     }
 
     override suspend fun logout() {
@@ -85,9 +96,38 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
         }
     }
 
+    override suspend fun uploadAvatarData(uid: String, data: ByteArray): String? {
+        return try {
+            val ref = storage.reference.child("avatars/$uid")
+            ref.putBytes(data).await()
+            ref.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     override suspend fun updateProfile(uid: String, updates: Map<String, Any>): Boolean {
         return try {
             usersCollection.document(uid).update(updates).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override suspend fun toggleFavorite(userId: String, propertyId: String): Boolean {
+        return try {
+            val userRef = usersCollection.document(userId)
+            val doc = userRef.get().await()
+            val user = doc.toObject(User::class.java)
+            val favorites = user?.favoriteIds ?: emptyList()
+            
+            val isFavorite = favorites.contains(propertyId)
+            if (isFavorite) {
+                userRef.update("favoriteIds", FieldValue.arrayRemove(propertyId)).await()
+            } else {
+                userRef.update("favoriteIds", FieldValue.arrayUnion(propertyId)).await()
+            }
             true
         } catch (e: Exception) {
             false

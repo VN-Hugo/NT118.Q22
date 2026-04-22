@@ -1,6 +1,8 @@
 package com.example.travelapp.ui.owner
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,17 +13,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import androidx.compose.ui.res.painterResource
+import com.example.travelapp.R
 
 private val BrandTealColor = Color(0xFF005D67)
 private val SoftGrayColor = Color(0xFFF2F4F5)
-private val TipGreenColor = Color(0xFFE0F2F1)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +38,13 @@ fun AddHotelScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    var isCityMenuExpanded by remember { mutableStateOf(false) }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        viewModel.onImagesSelected(uris)
+    }
 
     LaunchedEffect(state) {
         when (state) {
@@ -75,7 +88,6 @@ fun AddHotelScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Section 1: Basic Info
             SectionHeaderOwner("THÔNG TIN CƠ BẢN")
             OwnerInputField(
                 label = "Tên khách sạn",
@@ -89,30 +101,104 @@ fun AddHotelScreen(
                 onValueChange = { viewModel.address = it },
                 placeholder = "Số nhà, tên đường, phường/xã..."
             )
-            OwnerInputField(
-                label = "Thành phố / Điểm đến",
-                value = viewModel.desName,
-                onValueChange = { viewModel.desName = it },
-                placeholder = "Ví dụ: Đà Lạt"
-            )
 
-            // Section 2: Pricing & Description
-            SectionHeaderOwner("GIÁ CẢ & MÔ TẢ")
+            // Dropdown chọn thành phố
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Thành phố", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(8.dp))
+                ExposedDropdownMenuBox(
+                    expanded = isCityMenuExpanded,
+                    onExpandedChange = { isCityMenuExpanded = !isCityMenuExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = viewModel.desName,
+                        onValueChange = {},
+                        readOnly = true,
+                        placeholder = { Text("Chọn thành phố", color = Color.LightGray) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCityMenuExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = BrandTealColor,
+                            unfocusedBorderColor = Color.LightGray
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = isCityMenuExpanded,
+                        onDismissRequest = { isCityMenuExpanded = false }
+                    ) {
+                        viewModel.provinceList.forEach { city ->
+                            DropdownMenuItem(
+                                text = { Text(city) },
+                                onClick = {
+                                    viewModel.desName = city
+                                    isCityMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            SectionHeaderOwner("MÔ TẢ KHÁCH SẠN")
             OwnerInputField(
-                label = "Giá khởi điểm (đ/đêm)",
-                value = viewModel.price,
-                onValueChange = { viewModel.price = it },
-                placeholder = "Ví dụ: 1200000"
-            )
-            OwnerInputField(
-                label = "Mô tả khách sạn",
+                label = "Giới thiệu",
                 value = viewModel.description,
                 onValueChange = { viewModel.description = it },
                 placeholder = "Giới thiệu về khách sạn của bạn...",
                 isMultiLine = true
             )
 
-            // Section 3: Amenities (Tags)
+            SectionHeaderOwner("HÌNH ẢNH KHÁCH SẠN")
+            if (viewModel.selectedImages.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .background(SoftGrayColor, RoundedCornerShape(12.dp))
+                        .clickable { galleryLauncher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_add_photo), // Sử dụng painterResource
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Text("Bấm để chọn ảnh từ thư viện", color = Color.Gray, fontSize = 12.sp)
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    viewModel.selectedImages.forEach { uri ->
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .background(SoftGrayColor, RoundedCornerShape(8.dp))
+                            .clickable { galleryLauncher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = BrandTealColor)
+                    }
+                }
+                TextButton(onClick = { viewModel.onImagesSelected(emptyList()) }) {
+                    Text("Xóa tất cả ảnh", color = Color.Red, fontSize = 12.sp)
+                }
+            }
+
             SectionHeaderOwner("TIỆN ÍCH NỔI BẬT")
             FlowRowOwner(spacing = 8.dp) {
                 val tags = listOf("Wifi", "Hồ bơi", "Spa", "Nhà hàng", "Bãi biển", "Phòng gym", "Buffet")
@@ -136,21 +222,10 @@ fun AddHotelScreen(
 }
 
 @Composable
-fun SectionHeaderOwner(title: String) {
-    Text(
-        text = title,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Bold,
-        color = Color.Gray,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-}
-
-@Composable
 fun OwnerInputField(
     label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
     placeholder: String,
     isMultiLine: Boolean = false
 ) {
@@ -169,6 +244,17 @@ fun OwnerInputField(
             )
         )
     }
+}
+
+@Composable
+fun SectionHeaderOwner(title: String) {
+    Text(
+        text = title,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color.Gray,
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
 }
 
 @Composable

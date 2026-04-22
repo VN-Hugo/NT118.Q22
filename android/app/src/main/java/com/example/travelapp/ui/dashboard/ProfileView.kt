@@ -14,44 +14,49 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.travelapp.domain.model.User
+import com.example.travelapp.data.model.User
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.painter.Painter
+import com.example.travelapp.R
 
 @Composable
 fun ProfileScreen(
     onLogoutSuccess: () -> Unit,
+    onNavigateToWishlist: () -> Unit, // THÊM CALLBACK NÀY
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val profileState by viewModel.profileState.collectAsState()
     val isUploading by viewModel.isUploading.collectAsState()
+    val context = LocalContext.current
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { viewModel.uploadAvatar(it) }
+        uri?.let { viewModel.uploadAvatar(context, it) }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(Color(0xFFF8F9FA))
                 .verticalScroll(rememberScrollState())
         ) {
-            // Top Bar Icons
+            // Top Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -59,13 +64,16 @@ fun ProfileScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    modifier = Modifier.clickable { /* Handle back */ }
-                )
-                Text("Profile", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Icon(Icons.Default.MoreVert, contentDescription = "More")
+                IconButton(onClick = { /* Quay lại nếu cần */ }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Quay lại"
+                    )
+                }
+                Text("Tài khoản của tôi", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                IconButton(onClick = { /* Cài đặt */ }) {
+                    Icon(Icons.Default.Settings, contentDescription = "Cài đặt")
+                }
             }
 
             when (val state = profileState) {
@@ -76,14 +84,16 @@ fun ProfileScreen(
                             .height(300.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = Color(0xFF2196F3))
                     }
                 }
                 is ProfileState.Success -> {
                     ProfileContent(
                         user = state.user,
+                        viewModel = viewModel,
                         onLogoutClick = { viewModel.logout(onLogoutSuccess) },
-                        onEditAvatarClick = { launcher.launch("image/*") }
+                        onEditAvatarClick = { launcher.launch("image/*") },
+                        onWishlistClick = onNavigateToWishlist // TRUYỀN VÀO ĐÂY
                     )
                 }
                 is ProfileState.Error -> {
@@ -117,146 +127,223 @@ fun ProfileScreen(
 @Composable
 fun ProfileContent(
     user: User,
+    viewModel: ProfileViewModel,
     onLogoutClick: () -> Unit,
-    onEditAvatarClick: () -> Unit
+    onEditAvatarClick: () -> Unit,
+    onWishlistClick: () -> Unit // THÊM CALLBACK NÀY
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Header Section (Avatar & Name)
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+        // Header Section (Avatar & Basic Info)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Box(contentAlignment = Alignment.BottomEnd) {
-                // Avatar
-                if (user.avatarUrl.isNotEmpty()) {
-                    AsyncImage(
-                        model = user.avatarUrl,
-                        contentDescription = "Avatar",
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    if (user.avatarUrl.isNotEmpty()) {
+                        AsyncImage(
+                            model = user.avatarUrl,
+                            contentDescription = "Ảnh đại diện",
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape)
+                                .border(4.dp, Color(0xFFF1F3F4), CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFE3F2FD))
+                                .border(4.dp, Color.White, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                modifier = Modifier.size(60.dp),
+                                tint = Color(0xFF2196F3)
+                            )
+                        }
+                    }
+
+                    Surface(
                         modifier = Modifier
-                            .size(140.dp)
-                            .clip(CircleShape)
-                            .border(4.dp, Color.White, CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(140.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFE0E0E0))
-                            .border(4.dp, Color.White, CircleShape),
-                        contentAlignment = Alignment.Center
+                            .size(36.dp)
+                            .clickable { onEditAvatarClick() },
+                        shape = CircleShape,
+                        color = Color(0xFF2196F3),
+                        border = BorderStroke(2.dp, Color.White)
                     ) {
                         Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(60.dp),
-                            tint = Color.Gray
+                            painter = painterResource(id = R.drawable.ic_camera),
+                            contentDescription = "Đổi ảnh",
+                            tint = Color.White,
+                            modifier = Modifier.padding(8.dp)
                         )
                     }
                 }
 
-                // Edit Button
-                Surface(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clickable { onEditAvatarClick() },
-                    shape = CircleShape,
-                    color = Color(0xFF2196F3),
-                    border = BorderStroke(2.dp, Color.White)
-                ) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Edit Avatar",
-                        tint = Color.White,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    user.fullName.ifEmpty { "Khách du lịch" },
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    user.email,
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                user.fullName.ifEmpty { "User Name" },
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                user.email,
-                fontSize = 15.sp,
-                color = Color(0xFF2196F3),
-                fontWeight = FontWeight.Medium
-            )
         }
 
-        Spacer(modifier = Modifier.height(30.dp))
-
-        // Stats Row (Trips, Countries, Miles) - Keep static for now
+        // Stats Row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            StatCard(label = "Trips", value = "12", modifier = Modifier.weight(1f))
-            StatCard(label = "Countries", value = "4", modifier = Modifier.weight(1f))
-            StatCard(label = "Miles", value = "24k", modifier = Modifier.weight(1f))
+            StatCard(label = "Chuyến đi", value = "12", modifier = Modifier.weight(1f))
+            StatCard(label = "Quốc gia", value = "4", modifier = Modifier.weight(1f))
+            StatCard(label = "Điểm thưởng", value = "2.4k", modifier = Modifier.weight(1f))
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Sections
-        SectionTitle("TRAVEL ACTIVITY")
+        // Personal Info Edit Section
+        SectionTitle("THÔNG TIN CÁ NHÂN")
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                EditField(
+                    label = "Họ và tên",
+                    value = viewModel.editFullName,
+                    onValueChange = { viewModel.editFullName = it }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                EditField(
+                    label = "Số điện thoại",
+                    value = viewModel.editPhoneNumber,
+                    onValueChange = { viewModel.editPhoneNumber = it }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { viewModel.updateProfile() },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                ) {
+                    Text("Lưu thay đổi", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Activity Sections
+        SectionTitle("HOẠT ĐỘNG DU LỊCH")
+        
+        // HOÀN THIỆN: Hiển thị số lượng thực tế từ danh sách yêu thích
+        val favoriteCount = user.favoriteIds.size
         ProfileMenuItem(
-            icon = Icons.Default.Favorite,
-            title = "Wishlist",
-            subtitle = "8 saved destinations",
+            icon = rememberVectorPainter(image = Icons.Default.FavoriteBorder),
+            title = "Danh sách yêu thích",
+            subtitle = if (favoriteCount > 0) "$favoriteCount địa điểm đã lưu" else "Chưa có địa điểm nào",
             iconBgColor = Color(0xFFE3F2FD),
-            iconColor = Color(0xFF2196F3)
+            iconColor = Color(0xFF2196F3),
+            onClick = onWishlistClick // KÍCH HOẠT SỰ KIỆN Ở ĐÂY
         )
+        
         ProfileMenuItem(
-            icon = Icons.Outlined.Place,
-            title = "Travel History",
-            subtitle = "Past bookings and itineraries",
-            iconBgColor = Color(0xFFE1F5FE),
-            iconColor = Color(0xFF03A9F4)
+            icon = painterResource(id = R.drawable.ic_history),
+            title = "Lịch sử chuyến đi",
+            subtitle = "Các đơn đặt và hành trình cũ",
+            iconBgColor = Color(0xFFF1F8E9),
+            iconColor = Color(0xFF4CAF50)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SectionTitle("APPLICATION")
+        // App Section
+        SectionTitle("ỨNG DỤNG")
         ProfileMenuItem(
-            icon = Icons.Default.Settings,
-            title = "Settings",
-            subtitle = "Preferences and privacy",
-            iconBgColor = Color(0xFFF5F5F5),
-            iconColor = Color(0xFF616161)
+            icon = painterResource(id = R.drawable.ic_help),
+            title = "Trung tâm trợ giúp",
+            subtitle = "Câu hỏi thường gặp và hỗ trợ",
+            iconBgColor = Color(0xFFFFF3E0),
+            iconColor = Color(0xFFFF9800)
         )
         ProfileMenuItem(
-            icon = Icons.Default.Info,
-            title = "Help Center",
-            subtitle = "FAQs and customer support",
+            icon = painterResource(id = R.drawable.ic_shield),
+            title = "Quyền riêng tư",
+            subtitle = "Bảo mật và điều khoản",
             iconBgColor = Color(0xFFF5F5F5),
             iconColor = Color(0xFF616161)
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+        
         // Logout Button
         LogoutButton(onClick = onLogoutClick)
+        
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun EditField(
+    label: String,
+    value: androidx.compose.ui.text.input.TextFieldValue,
+    onValueChange: (androidx.compose.ui.text.input.TextFieldValue) -> Unit
+) {
+    Column {
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+        Spacer(modifier = Modifier.height(4.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF2196F3),
+                unfocusedBorderColor = Color(0xFFE0E0E0)
+            )
+        )
     }
 }
 
 @Composable
 fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier.height(90.dp),
-        shape = RoundedCornerShape(24.dp),
-        color = Color(0xFFE3F2FD).copy(alpha = 0.5f)
+        modifier = modifier.height(85.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFF1F3F4))
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1976D2))
-            Text(label, fontSize = 14.sp, color = Color.Gray)
+            Text(value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2196F3))
+            Text(label, fontSize = 12.sp, color = Color.Gray)
         }
     }
 }
@@ -266,80 +353,84 @@ fun SectionTitle(title: String) {
     Text(
         text = title,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-        fontSize = 14.sp,
-        fontWeight = FontWeight.Bold,
-        color = Color(0xFF546E7A)
+        fontSize = 13.sp,
+        fontWeight = FontWeight.ExtraBold,
+        color = Color(0xFF455A64)
     )
 }
 
 @Composable
 fun ProfileMenuItem(
-    icon: ImageVector,
+    icon: Painter,
     title: String,
     subtitle: String,
     iconBgColor: Color,
-    iconColor: Color
+    iconColor: Color,
+    onClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { }
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
-            modifier = Modifier.size(52.dp),
-            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.size(48.dp),
+            shape = RoundedCornerShape(12.dp),
             color = iconBgColor
         ) {
             Icon(
-                icon,
+                painter = icon,
                 contentDescription = null,
                 tint = iconColor,
-                modifier = Modifier.padding(14.dp)
+                modifier = Modifier.padding(12.dp)
             )
         }
 
         Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
-            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Color(0xFF263238))
-            Text(subtitle, fontSize = 13.sp, color = Color.Gray)
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF263238))
+            Text(subtitle, fontSize = 12.sp, color = Color.Gray)
         }
 
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
-            tint = Color.LightGray
+            tint = Color(0xFFB0BEC5),
+            modifier = Modifier.size(20.dp)
         )
     }
 }
 
 @Composable
 fun LogoutButton(onClick: () -> Unit) {
-    Row(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 24.dp, vertical = 20.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 24.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFFFEBEE),
+        border = BorderStroke(1.dp, Color(0xFFFFCDD2))
     ) {
-        Surface(
-            modifier = Modifier.size(52.dp),
-            shape = RoundedCornerShape(14.dp),
-            color = Color(0xFFFFEBEE)
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ExitToApp,
                 contentDescription = null,
-                tint = Color.Red,
-                modifier = Modifier.padding(14.dp)
+                tint = Color(0xFFD32F2F),
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                "Đăng xuất tài khoản",
+                color = Color(0xFFD32F2F),
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
             )
         }
-        Text(
-            "Logout",
-            modifier = Modifier.padding(start = 16.dp),
-            color = Color.Red,
-            fontWeight = FontWeight.Bold,
-            fontSize = 17.sp
-        )
     }
 }

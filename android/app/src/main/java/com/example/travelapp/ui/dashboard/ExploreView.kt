@@ -21,7 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.travelapp.domain.model.Property
+import com.example.travelapp.data.model.Property
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +30,7 @@ fun ExploreScreen(
     onPropertyClick: (String) -> Unit,
     viewModel: ExploreViewModel = hiltViewModel()
 ) {
+    // Sử dụng collectAsState để lắng nghe dữ liệu từ ViewModel
     val exploreState by viewModel.exploreState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedType by viewModel.selectedType.collectAsState()
@@ -91,13 +93,13 @@ fun ExploreScreen(
         when (val state = exploreState) {
             is ExploreState.Loading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Color(0xFF1976D2))
                 }
             }
             is ExploreState.Success -> {
                 if (state.properties.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Không tìm thấy kết quả nào")
+                        Text("Không có kết quả nào phù hợp.")
                     }
                 } else {
                     LazyVerticalGrid(
@@ -107,8 +109,14 @@ fun ExploreScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(state.properties) { property ->
-                            PropertyCard(property, onClick = { onPropertyClick(property.proId) })
+                        items(state.properties, key = { it.proId }) { property -> // Thêm key để tối ưu List
+                            val isFavorite = state.favoriteIds.contains(property.proId)
+                            PropertyCard(
+                                property = property,
+                                isFavorite = isFavorite,
+                                onClick = { onPropertyClick(property.proId) },
+                                onToggleFavorite = { viewModel.toggleFavorite(property.proId) }
+                            )
                         }
                     }
                 }
@@ -140,40 +148,53 @@ fun FilterChipItem(text: String, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun PropertyCard(property: Property, onClick: () -> Unit) {
+fun PropertyCard(
+    property: Property,
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    onToggleFavorite: () -> Unit
+) {
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp),
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Column {
-            Box(modifier = Modifier.height(150.dp).fillMaxWidth()) {
+            Box(modifier = Modifier
+                .height(150.dp)
+                .fillMaxWidth()) {
                 val imageUrl = property.images.firstOrNull { it.isPrimary }?.url ?: property.images.firstOrNull()?.url
-                
-                if (imageUrl != null) {
+
+                if (!imageUrl.isNullOrEmpty()) {
                     AsyncImage(
                         model = imageUrl,
-                        contentDescription = null,
+                        contentDescription = property.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Box(modifier = Modifier.fillMaxSize().background(Color.LightGray))
+                    Box(modifier = Modifier.fillMaxSize().background(Color.LightGray), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
+                    }
                 }
 
+                // Nút Favorite
                 Surface(
                     modifier = Modifier
                         .padding(12.dp)
                         .size(32.dp)
                         .align(Alignment.TopEnd),
                     shape = CircleShape,
-                    color = Color.Black.copy(alpha = 0.3f)
+                    color = if (isFavorite) Color.White else Color.Black.copy(alpha = 0.3f),
+                    onClick = { onToggleFavorite() } // Chuyển clickable vào Surface của Material3
                 ) {
                     Icon(
-                        Icons.Default.FavoriteBorder,
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = if (isFavorite) Color.Red else Color.White,
                         modifier = Modifier.padding(6.dp)
                     )
                 }
@@ -185,17 +206,25 @@ fun PropertyCard(property: Property, onClick: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(property.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                    Text(property.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, modifier = Modifier.weight(1f))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFB300), modifier = Modifier.size(12.dp))
-                        Text(property.averageRating.toString(), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 2.dp))
+                        Text("${property.averageRating}", fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 2.dp))
                     }
                 }
                 Text(property.desName, color = Color.Gray, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(4.dp))
-                Row {
-                    Text(text = "đ${String.format("%,.0f", property.price)}", fontWeight = FontWeight.ExtraBold, color = Color.Black)
-                    Text(text = if(property.type == "hotel") "/đêm" else "/vé", color = Color.Gray, fontSize = 11.sp)
+
+                // Fix lỗi định dạng chuỗi ở đây
+                val displayPrice = if (property.price > 0) {
+                    "đ${String.format(Locale.getDefault(), "%,.0f", property.price.toDouble())}"
+                } else {
+                    "Chưa cập nhật"
+                }
+
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(text = displayPrice, fontWeight = FontWeight.ExtraBold, color = Color.Black, fontSize = 14.sp)
+                    Text(text = if(property.type == "hotel") "/đêm" else "/vé", color = Color.Gray, fontSize = 11.sp, modifier = Modifier.padding(start = 2.dp, bottom = 1.dp))
                 }
             }
         }

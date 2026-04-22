@@ -23,22 +23,24 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
 
     Scaffold(
         bottomBar = {
-            TravelBottomBar(
-                currentRoute = currentRoute,
-                onNavigate = { targetRoute ->
-                    // Tránh tạo nhiều instance của cùng một màn hình khi nhấn tab liên tục
-                    internalNavController.navigate(targetRoute) {
-                        popUpTo(internalNavController.graph.startDestinationId) {
-                            saveState = true
+            // Chỉ hiển thị BottomBar cho các tab chính
+            val showBottomBar = currentRoute in listOf("home", "explore", "trips", "ai_planner", "profile")
+            if (showBottomBar) {
+                TravelBottomBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { targetRoute ->
+                        internalNavController.navigate(targetRoute) {
+                            popUpTo(internalNavController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
-                }
-            )
+                )
+            }
         }
     ) { paddingValues ->
-        // NavHost nội bộ xử lý việc chuyển đổi giữa các Tab
         NavHost(
             navController = internalNavController,
             startDestination = "home",
@@ -48,7 +50,6 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
             composable("home") { 
                 SmartTravelHomeScreen(
                     onPropertyClick = { proId ->
-                        // Sử dụng rootNavController để chuyển sang màn hình Chi tiết (ẩn Bottom Bar)
                         rootNavController.navigate("property_detail/$proId")
                     }
                 ) 
@@ -58,7 +59,6 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
             composable("explore") {
                 ExploreScreen(
                     onPropertyClick = { proId ->
-                        // Sử dụng rootNavController để chuyển sang màn hình Chi tiết (ẩn Bottom Bar)
                         rootNavController.navigate("property_detail/$proId")
                     }
                 )
@@ -78,10 +78,22 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
             composable("profile") {
                 ProfileScreen(
                     onLogoutSuccess = {
-                        // Khi đăng xuất, dùng rootNavController quay về Welcome và xóa toàn bộ stack
                         rootNavController.navigate(Routes.WELCOME) {
-                            popUpTo(Routes.MAIN_DASHBOARD) { inclusive = true }
+                            popUpTo(0) { inclusive = true }
                         }
+                    },
+                    onNavigateToWishlist = {
+                        internalNavController.navigate("wishlist")
+                    }
+                )
+            }
+
+            // 6. Màn hình Danh sách yêu thích (Nằm trong luồng Dashboard)
+            composable("wishlist") {
+                WishlistScreen(
+                    onBack = { internalNavController.popBackStack() },
+                    onPropertyClick = { proId ->
+                        rootNavController.navigate("property_detail/$proId")
                     }
                 )
             }

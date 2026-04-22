@@ -2,8 +2,8 @@ package com.example.travelapp.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.travelapp.domain.model.Property
-import com.example.travelapp.domain.usecase.GetPropertiesUseCase
+import com.example.travelapp.data.model.Property
+import com.example.travelapp.data.repository.PropertyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -16,15 +16,15 @@ sealed class HomeState {
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getPropertiesUseCase: GetPropertiesUseCase
+    private val propertyRepository: PropertyRepository
 ) : ViewModel() {
 
-    val homeState: StateFlow<HomeState> = getPropertiesUseCase("hotel")
+    val homeState: StateFlow<HomeState> = propertyRepository.getProperties("hotel")
         .map { hotels ->
             HomeState.Success(hotels) as HomeState
         }
         .onStart { emit(HomeState.Loading) }
-        .catch { e -> emit(HomeState.Error(e.message ?: "Unknown Error")) }
+        .catch { e -> emit(HomeState.Error(e.message ?: "Lỗi tải dữ liệu")) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

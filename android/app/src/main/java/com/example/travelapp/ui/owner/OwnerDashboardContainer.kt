@@ -48,12 +48,26 @@ fun OwnerDashboardContainer(rootNavController: NavHostController) {
             composable("hotels") {
                 HotelManagementScreen(
                     onAddHotelClick = { internalNavController.navigate("add_hotel") },
+                    onEditHotelClick = { proId -> internalNavController.navigate("edit_hotel/$proId") },
                     onManageRoomsClick = { proId -> internalNavController.navigate("room_mgmt/$proId") }
                 )
             }
 
-            // Màn hình Thêm khách sạn (Fullscreen)
+            // Màn hình Thêm khách sạn mới
             composable("add_hotel") {
+                AddHotelScreen(
+                    onBack = { internalNavController.popBackStack() },
+                    onSuccess = { proId ->
+                        // Tự động chuyển sang thêm phòng sau khi tạo xong thông tin KS
+                        internalNavController.navigate("add_room/$proId") {
+                            popUpTo("add_hotel") { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // Màn hình Chỉnh sửa khách sạn
+            composable("edit_hotel/{proId}") {
                 AddHotelScreen(
                     onBack = { internalNavController.popBackStack() },
                     onSuccess = { internalNavController.popBackStack() }
@@ -61,15 +75,38 @@ fun OwnerDashboardContainer(rootNavController: NavHostController) {
             }
 
             // Màn hình Quản lý phòng của từng khách sạn
-            composable("room_mgmt/{proId}") {
-                RoomManagementScreen() // Sau này sẽ truyền proId vào ViewModel của màn hình này
+            composable("room_mgmt/{proId}") { backStackEntry ->
+                val proId = backStackEntry.arguments?.getString("proId") ?: ""
+                RoomManagementScreen(
+                    onBack = { internalNavController.popBackStack() },
+                    onAddRoomClick = { internalNavController.navigate("add_room/$proId") },
+                    onEditRoomClick = { roomTypeId ->
+                        internalNavController.navigate("edit_room/$proId/$roomTypeId")
+                    }
+                )
+            }
+
+            // Màn hình Thêm hạng phòng mới
+            composable("add_room/{proId}") {
+                AddRoomScreen(
+                    onBack = { internalNavController.popBackStack() }
+                )
+            }
+
+            // Màn hình Chỉnh sửa hạng phòng
+            composable("edit_room/{proId}/{roomTypeId}") {
+                AddRoomScreen(
+                    onBack = { internalNavController.popBackStack() }
+                )
             }
 
             composable("bookings") { BookingManagementScreen() }
             composable("analytics") { ReviewScreen(onNavigate = { internalNavController.navigate(it) }) }
             composable("profile") {
-                OwnerProfileScreen(onNavigate = { 
-                    if (it == "logout") rootNavController.navigate(Routes.WELCOME) { popUpTo(0) }
+                OwnerProfileScreen(onNavigate = {
+                    if (it == "logout") rootNavController.navigate(Routes.WELCOME) {
+                        popUpTo(Routes.MAIN_DASHBOARD) { inclusive = true }
+                    }
                     else internalNavController.navigate(it)
                 })
             }
