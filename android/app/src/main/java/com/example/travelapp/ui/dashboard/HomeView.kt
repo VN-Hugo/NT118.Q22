@@ -24,9 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-
-// 1. Import đúng chuẩn model Property mới của bạn
-import com.example.travelapp.domain.model.Property
+import com.example.travelapp.data.model.Property
 
 // LƯU Ý: Bạn hãy import PropertyRepository theo đúng đường dẫn trong app của bạn nhé!
 // Ví dụ: import com.example.travelapp.domain.repository.PropertyRepository
@@ -35,46 +33,48 @@ import com.example.travelapp.domain.model.Property
 
 data class Deal(val title: String, val desc: String, val tag: String, val color: Color)
 
-class HomeViewModel : ViewModel() {
-    // 1. Khởi tạo kho dữ liệu mới (Sửa lại tên repository cho đúng với file của bạn)
-    // private val repository = PropertyRepository()
-
-    // 2. Chuyển từ List<Hotel> sang List<Property>
-    var propertyList = mutableStateOf<List<Property>>(emptyList())
-        private set
-
-    // 3. Hàm gọi dữ liệu
-    fun loadProperties() {
-        // LƯU Ý: Bỏ comment và gọi đúng hàm lấy danh sách trong PropertyRepository của bạn
-        /*
-        repository.getAllProperties(
-            onSuccess = { data ->
-                propertyList.value = data
-            },
-            onFailure = { exception ->
-                // Xử lý báo lỗi ở đây nếu cần
-            }
-        )
-        */
-
-        // Tạm thời tạo data giả (Mock Data) để bạn thấy UI không bị lỗi:
-        propertyList.value = listOf(
-            Property(name = "Khách sạn Mường Thanh", address = "Đà Nẵng", averageRating = 4.5f),
-            Property(name = "Vinpearl Resort", address = "Nha Trang", averageRating = 4.8f)
-        )
-    }
-}
+//class HomeViewModel : ViewModel() {
+//    // 1. Khởi tạo kho dữ liệu mới (Sửa lại tên repository cho đúng với file của bạn)
+//    // private val repository = PropertyRepository()
+//
+//    // 2. Chuyển từ List<Hotel> sang List<Property>
+//    var propertyList = mutableStateOf<List<Property>>(emptyList())
+//        private set
+//
+//    // 3. Hàm gọi dữ liệu
+//    fun loadProperties() {
+//        // LƯU Ý: Bỏ comment và gọi đúng hàm lấy danh sách trong PropertyRepository của bạn
+//        /*
+//        repository.getAllProperties(
+//            onSuccess = { data ->
+//                propertyList.value = data
+//            },
+//            onFailure = { exception ->
+//                // Xử lý báo lỗi ở đây nếu cần
+//            }
+//        )
+//        */
+//
+//        // Tạm thời tạo data giả (Mock Data) để bạn thấy UI không bị lỗi:
+//        propertyList.value = listOf(
+//            Property(name = "Khách sạn Mường Thanh", address = "Đà Nẵng", averageRating = 4.5f),
+//            Property(name = "Vinpearl Resort", address = "Nha Trang", averageRating = 4.8f)
+//        )
+//    }
+//}
 
 @Composable
 fun SmartTravelHomeScreen(
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    onPropertyClick: (String) -> Unit
 ) {
-    // 1. Lắng nghe danh sách property từ ViewModel
-    val properties = viewModel.propertyList.value
+    // 1. Lắng nghe toàn bộ trạng thái từ ViewModel
+    val homeState by viewModel.homeState.collectAsState()
 
-    // 2. Tự động tải dữ liệu
-    LaunchedEffect(Unit) {
-        viewModel.loadProperties()
+// 2. Tự động bóc tách danh sách từ trạng thái Success
+    val properties = when (homeState) {
+        is HomeState.Success -> (homeState as HomeState.Success).suggestedHotels
+        else -> emptyList() // Trả về danh sách rỗng nếu đang Loading hoặc bị Error
     }
 
     Column(
@@ -257,5 +257,5 @@ fun DealsList() {
 @Preview(showBackground = true)
 @Composable
 fun HomePreview() {
-    SmartTravelHomeScreen()
+    SmartTravelHomeScreen(onPropertyClick = {})
 }

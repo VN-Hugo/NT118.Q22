@@ -85,4 +85,8 @@ dependencies {
 
     //Cloudinary
     implementation("com.cloudinary:cloudinary-android:3.1.2")
+
+    // For Goole Maps
+    implementation("com.google.maps.android:maps-compose:4.3.3") // Thư viện chính cho Compose
+    implementation("com.google.android.gms:play-services-maps:18.2.0") // Core Google Maps
 }
