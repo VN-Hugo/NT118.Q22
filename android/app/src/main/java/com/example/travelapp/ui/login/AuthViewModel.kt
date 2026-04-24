@@ -8,26 +8,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-import com.example.travelapp.domain.usecase.LoginUseCase
-import com.example.travelapp.domain.usecase.RegisterUseCase
-import com.example.travelapp.domain.usecase.SignInWithGoogleUseCase
+import com.example.travelapp.data.model.User
+import com.example.travelapp.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
 
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
-    object Success : AuthState()
+    data class Success(val role: String) : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val loginUseCase: LoginUseCase,
-    private val registerUseCase: RegisterUseCase,
-    private val signInWithGoogleUseCase: SignInWithGoogleUseCase
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     var authState by mutableStateOf<AuthState>(AuthState.Idle)
@@ -38,15 +33,13 @@ class AuthViewModel @Inject constructor(
             authState = AuthState.Error("Vui lòng điền đầy đủ thông tin")
             return
         }
-
         authState = AuthState.Loading
-
         viewModelScope.launch {
-            val success = loginUseCase(email, pass)
-            authState = if (success) {
-                AuthState.Success
+            val success = userRepository.loginUser(email, pass)
+            if (success) {
+                fetchRoleAndSuccess()
             } else {
-                AuthState.Error("Email hoặc mật khẩu không đúng")
+                authState = AuthState.Error("Email hoặc mật khẩu không đúng")
             }
         }
     }
@@ -54,25 +47,47 @@ class AuthViewModel @Inject constructor(
     fun signInWithGoogle(idToken: String) {
         authState = AuthState.Loading
         viewModelScope.launch {
-            val success = signInWithGoogleUseCase(idToken)
-            authState = if (success) {
-                AuthState.Success
+            val success = userRepository.signInWithGoogle(idToken)
+            if (success) {
+                fetchRoleAndSuccess()
             } else {
-                AuthState.Error("Đăng nhập Google thất bại")
+                authState = AuthState.Error("Đăng nhập Google thất bại")
             }
         }
     }
 
-    fun signUp(email: String, pass: String, name: String) {
+    private suspend fun fetchRoleAndSuccess() {
+        val uid = userRepository.getCurrentUserId()
+        if (uid != null) {
+            val user = userRepository.getUserProfile(uid)
+            authState = AuthState.Success(user?.role ?: "USER")
+        } else {
+            authState = AuthState.Error("Không tìm thấy thông tin phiên đăng nhập")
+        }
+    }
+
+    fun signUp(email: String, pass: String, name: String, role: String) {
         authState = AuthState.Loading
-
         viewModelScope.launch {
-            val success = registerUseCase(email, pass, name)
-
-            authState = if (success) {
-                AuthState.Success
+            // 1. Đăng ký tài khoản trên Firebase Auth
+            val uid = userRepository.registerUser(email, pass)
+            if (uid != null) {
+                // 2. Tạo đối tượng User để lưu vào Firestore
+                val user = User(
+                    uid = uid,
+                    fullName = name,
+                    email = email,
+                    role = role
+                )
+                // 3. Lưu thông tin User
+                val saved = userRepository.saveUser(user)
+                if (saved) {
+                    authState = AuthState.Success(role)
+                } else {
+                    authState = AuthState.Error("Lưu thông tin người dùng thất bại")
+                }
             } else {
-                AuthState.Error("Đăng ký thất bại")
+                authState = AuthState.Error("Đăng ký tài khoản thất bại")
             }
         }
     }
@@ -80,5 +95,4 @@ class AuthViewModel @Inject constructor(
     fun resetState() {
         authState = AuthState.Idle
     }
-
 }

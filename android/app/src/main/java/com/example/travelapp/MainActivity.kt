@@ -15,19 +15,19 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
         setContent {
             TravelAppTheme {
-                // Surface là cái nền của ứng dụng
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // 1. Khởi tạo navController để quản lý việc chuyển màn
                     val navController = rememberNavController()
-
-                    // 2. Gọi AppNavGraph (file bạn đã tách riêng) để điều hướng
                     AppNavGraph(navController = navController)
                 }
             }
