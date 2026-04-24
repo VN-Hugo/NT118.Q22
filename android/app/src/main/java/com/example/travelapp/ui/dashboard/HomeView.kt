@@ -9,22 +9,30 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.example.travelapp.data.model.Property
 
-// 1. Data Models (Nên tách ra file riêng nếu dùng ở nhiều màn hình khác nhau)
-data class Hotel(val name: String, val location: String, val price: String, val rating: String)
+// UI-only model for Deals (can be moved to domain later if stored in DB)
 data class Deal(val title: String, val desc: String, val tag: String, val color: Color)
 
 @Composable
-fun SmartTravelHomeScreen() {
-    // CHÚ Ý: Đã bỏ Scaffold và BottomBar vì DashboardContainer đã quản lý rồi
+fun SmartTravelHomeScreen(
+    onPropertyClick: (String) -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
+    val homeState by viewModel.homeState.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -36,16 +44,29 @@ fun SmartTravelHomeScreen() {
         FeaturedCard()
 
         SectionHeader(title = "Suggested Hotels", hasSeeAll = true)
-        HotelList()
+        
+        when (val state = homeState) {
+            is HomeState.Loading -> {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+            is HomeState.Success -> {
+                HotelList(state.suggestedHotels, onPropertyClick)
+            }
+            is HomeState.Error -> {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text("Error: ${state.message}", color = Color.Red)
+                }
+            }
+        }
 
         SectionHeader(title = "Limited Time Deals", hasSeeAll = false)
         DealsList()
 
-        Spacer(modifier = Modifier.height(24.dp)) // Tạo khoảng trống cuối trang
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
-
-// --- Thành phần UI nhỏ ---
 
 @Composable
 fun TopBar() {
@@ -92,8 +113,8 @@ fun FeaturedCard() {
             .height(220.dp)
             .clip(RoundedCornerShape(24.dp))
     ) {
-        // Tạm thời dùng màu xám, sau này bạn thay bằng Image()
         Box(modifier = Modifier.fillMaxSize().background(Color.DarkGray))
+        // Background image could be added here later
 
         Column(modifier = Modifier.align(Alignment.BottomStart).padding(20.dp)) {
             Surface(
@@ -135,34 +156,42 @@ fun SectionHeader(title: String, hasSeeAll: Boolean) {
 }
 
 @Composable
-fun HotelList() {
-    val hotels = listOf(
-        Hotel("Azure Bay Resort", "Santorini, Greece", "$240", "4.9"),
-        Hotel("The Urban Loft", "Athens, Greece", "$185", "4.7")
-    )
+fun HotelList(hotels: List<Property>, onPropertyClick: (String) -> Unit) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(hotels) { hotel ->
             Card(
-                modifier = Modifier.width(220.dp),
+                modifier = Modifier.width(220.dp).clickable { onPropertyClick(hotel.proId) },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(4.dp)
             ) {
                 Column {
-                    Box(modifier = Modifier.height(140.dp).fillMaxWidth().background(Color.LightGray))
+                    Box(modifier = Modifier.height(140.dp).fillMaxWidth()) {
+                        val imageUrl = hotel.images.firstOrNull { it.isPrimary }?.url ?: hotel.images.firstOrNull()?.url
+                        if (imageUrl != null) {
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize().background(Color.LightGray))
+                        }
+                    }
                     Column(modifier = Modifier.padding(12.dp)) {
                         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                            Text(hotel.name, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Text(hotel.name, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.weight(1f))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Star, null, tint = Color(0xFFFFB300), modifier = Modifier.size(14.dp))
-                                Text(hotel.rating, fontSize = 12.sp, color = Color.Gray)
+                                Text(hotel.averageRating.toString(), fontSize = 12.sp, color = Color.Gray)
                             }
                         }
-                        Text(hotel.location, fontSize = 12.sp, color = Color.Gray)
-                        Text("${hotel.price}/night", color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
+                        Text(hotel.desName, fontSize = 12.sp, color = Color.Gray)
+                        Text("đ${hotel.price}/night", color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -197,10 +226,4 @@ fun DealsList() {
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HomePreview() {
-    SmartTravelHomeScreen()
 }
