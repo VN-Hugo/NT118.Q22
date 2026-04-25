@@ -23,11 +23,11 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
 
     Scaffold(
         bottomBar = {
-            // Chỉ hiển thị BottomBar cho các tab chính
+            // Chỉ hiển thị BottomBar cho các tab chính để tránh rối UI
             val showBottomBar = currentRoute in listOf("home", "explore", "trips", "ai_planner", "profile")
             if (showBottomBar) {
                 TravelBottomBar(
-                    currentRoute = currentRoute,
+                    currentRoute = currentRoute, // ĐÃ FIX TÊN THAM SỐ
                     onNavigate = { targetRoute ->
                         internalNavController.navigate(targetRoute) {
                             popUpTo(internalNavController.graph.startDestinationId) {
@@ -66,7 +66,12 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
 
             // 3. Tab Chuyến đi của tôi
             composable("trips") {
-                MyTripsScreen()
+                MyTripsScreen(
+                    onBookingClick = { proId ->
+                        // Điều hướng đến chi tiết khách sạn từ đơn đặt phòng
+                        rootNavController.navigate("property_detail/$proId")
+                    }
+                )
             }
 
             // 4. Tab Trợ lý AI Planner

@@ -3,17 +3,17 @@ package com.example.travelapp.data.model
 data class Booking(
     val bookId: String = "",
     val userId: String = "",
+    val ownerId: String = "", // Bổ sung để Owner dễ dàng quản lý
     val proId: String = "",
-    val proName: String = "", // Phi chuẩn hóa để hiển thị nhanh
+    val proName: String = "",
     val proImage: String = "",
     val startDate: Long = 0L,
     val endDate: Long = 0L,
     val totalPrice: Double = 0.0,
-    val status: String = "pending", // pending, confirmed, cancelled
+    val status: String = "pending", // pending, confirmed, cancelled, rejected
     val bookingType: String = "hotel",
     val countAdult: Int = 0,
     val countChild: Int = 0,
-    // Dữ liệu cụ thể
     val hotelBooking: HotelBookingDetails? = null,
     val activityBooking: ActivityBookingDetails? = null
 )
