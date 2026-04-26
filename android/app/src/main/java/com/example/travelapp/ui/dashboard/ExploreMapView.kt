@@ -1,11 +1,9 @@
 package com.example.travelapp.ui.dashboard
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,7 +19,6 @@ import coil.compose.AsyncImage
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
-// Nhớ import class Property của bạn nhé
 import com.example.travelapp.data.model.Property
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,14 +58,14 @@ fun ExploreMapScreen(
                     // Vẽ cục nhãn giá tiền giống Airbnb
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = if (selectedProperty?.id == property.id) Color.Black else Color.White,
+                        color = if (selectedProperty?.proId == property.proId) Color.Black else Color.White,
                         shadowElevation = 4.dp
                     ) {
                         Text(
                             text = "$${property.price}", // Giả sử model có biến price
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             fontWeight = FontWeight.Bold,
-                            color = if (selectedProperty?.id == property.id) Color.White else Color.Black
+                            color = if (selectedProperty?.proId == property.proId) Color.White else Color.Black
                         )
                     }
                 }
@@ -79,12 +76,11 @@ fun ExploreMapScreen(
         if (selectedProperty != null) {
             ModalBottomSheet(
                 onDismissRequest = { selectedProperty = null }, // Đóng khi bấm ra ngoài
-                windowInsets = WindowInsets(0)
             ) {
                 PropertyMiniCard(
                     property = selectedProperty!!,
                     onClick = {
-                        selectedProperty?.id?.let { id -> onNavigateToDetail(id) }
+                        selectedProperty?.proId?.let { id -> onNavigateToDetail(id) }
                     }
                 )
             }
