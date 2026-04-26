@@ -41,6 +41,8 @@ class AddHotelViewModel @Inject constructor(
 
     var hotelName by mutableStateOf(TextFieldValue(""))
     var address by mutableStateOf(TextFieldValue(""))
+    var latitude by mutableStateOf(10.762622)
+    var longitude by mutableStateOf(106.660172)
     var desName by mutableStateOf("")
     var description by mutableStateOf(TextFieldValue(""))
     var selectedTags by mutableStateOf(setOf<String>())
@@ -75,6 +77,8 @@ class AddHotelViewModel @Inject constructor(
                 originalProperty = property
                 hotelName = TextFieldValue(property.name)
                 address = TextFieldValue(property.address)
+                latitude = property.latitude
+                longitude = property.longitude
                 desName = property.desName
                 description = TextFieldValue(property.description)
                 selectedTags = property.tags.toSet()
@@ -137,6 +141,8 @@ class AddHotelViewModel @Inject constructor(
                     ownerId = ownerId,
                     name = hotelName.text,
                     address = address.text,
+                    latitude = latitude,
+                    longitude = longitude,
                     desName = desName,
                     description = description.text,
                     tags = selectedTags.toList(),
