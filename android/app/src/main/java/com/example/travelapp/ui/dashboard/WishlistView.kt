@@ -112,6 +112,7 @@ fun WishlistCard(hotel: Property, onClick: () -> Unit, onRemove: () -> Unit) {
     PropertyCard(
         property = hotel,
         isFavorite = true,
+        userLocation = null,
         onClick = onClick,
         onToggleFavorite = onRemove
     )

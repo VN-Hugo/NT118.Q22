@@ -24,6 +24,22 @@ import com.example.travelapp.data.model.Property
 import com.example.travelapp.data.model.RoomType
 import java.text.SimpleDateFormat
 import java.util.*
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.layout.*
+//import androidx.compose.foundation.shape.RoundedCornerShape
+//import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Directions
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+//import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+//import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -223,6 +239,14 @@ fun PropertyDetailContent(
                 lineHeight = 22.sp,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
+
+            // CODE GỌI BẢN ĐỒ
+            Spacer(modifier = Modifier.height(16.dp))
+            PropertyMiniMap(
+                latitude = property.latitude,
+                longitude = property.longitude,
+                propertyName = property.name
+            )
         }
     }
 }
@@ -285,6 +309,67 @@ fun BookingBottomBar(
                     Text("Xác nhận đặt", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
+        }
+    }
+}
+
+
+@Composable
+fun PropertyMiniMap(
+    latitude: Double,
+    longitude: Double,
+    propertyName: String
+) {
+    val context = LocalContext.current
+    val location = LatLng(latitude, longitude)
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(location, 15f) // Zoom level 15 là nhìn rõ phố phường
+    }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
+        Text(
+            text = "Vị trí trên bản đồ",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // Khung Map
+        GoogleMap(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(16.dp)),
+            cameraPositionState = cameraPositionState,
+            uiSettings = MapUiSettings(
+                zoomControlsEnabled = false,
+                scrollGesturesEnabled = false // Khóa cuộn để vuốt màn hình không bị vướng
+            )
+        ) {
+            Marker(
+                state = MarkerState(position = location),
+                title = propertyName
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Nút bấm chuyển hướng sang app Google Maps
+        OutlinedButton(
+            onClick = {
+                val uri = Uri.parse("google.navigation:q=$latitude,$longitude")
+                val mapIntent = Intent(Intent.ACTION_VIEW, uri)
+                mapIntent.setPackage("com.google.android.apps.maps")
+                if (mapIntent.resolveActivity(context.packageManager) != null) {
+                    context.startActivity(mapIntent)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Directions, contentDescription = "Chỉ đường")
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Chỉ đường đến đây")
         }
     }
 }

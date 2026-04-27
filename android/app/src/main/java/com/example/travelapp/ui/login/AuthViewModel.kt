@@ -37,7 +37,15 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             val success = userRepository.loginUser(email, pass)
             if (success) {
-                fetchRoleAndSuccess()
+                val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+
+                // KIỂM TRA XEM ĐÃ XÁC NHẬN EMAIL CHƯA
+                if (currentUser != null && currentUser.isEmailVerified) {
+                    fetchRoleAndSuccess()
+                } else {
+                    authState = AuthState.Error("Tài khoản chưa xác thực. Vui lòng kiểm tra Email của bạn!")
+                     userRepository.logout()
+                }
             } else {
                 authState = AuthState.Error("Email hoặc mật khẩu không đúng")
             }
@@ -94,5 +102,24 @@ class AuthViewModel @Inject constructor(
 
     fun resetState() {
         authState = AuthState.Idle
+    }
+
+    fun resetPassword(email: String) {
+        if (email.isBlank()) {
+            authState = AuthState.Error("Vui lòng nhập email để reset mật khẩu.")
+            return
+        }
+        viewModelScope.launch {
+            authState = AuthState.Loading
+            val result = userRepository.resetPassword(email)
+            result.fold(
+                onSuccess = {
+                    authState = AuthState.Error("Email khôi phục đã được gửi. Vui lòng kiểm tra hộp thư!") // Dùng Error tạm để mượn Toast báo thành công, hoặc bạn tạo state riêng
+                },
+                onFailure = { e ->
+                    authState = AuthState.Error(e.message ?: "Lỗi gửi email")
+                }
+            )
+        }
     }
 }

@@ -8,8 +8,8 @@ data class Property(
     val desId: String = "",
     val desName: String = "",
     val address: String = "",
-    val lat: Double = 0.0,
-    val lng: Double = 0.0,
+    val latitude: Double = 10.762622,  // Tọa độ mặc định (ví dụ TP.HCM)
+    val longitude: Double = 106.660172,
     val description: String = "",
     val averageRating: Float = 0f,
     val reviewCount: Int = 0,
@@ -19,7 +19,8 @@ data class Property(
     val images: List<PropertyImage> = emptyList(),
     // Thông tin mở rộng tùy theo type
     val hotelInfo: HotelInfo? = null,
-    val activityInfo: ActivityInfo? = null
+    val activityInfo: ActivityInfo? = null,
+    val defaultPrice: Double = 0.0
 )
 
 data class PropertyImage(
