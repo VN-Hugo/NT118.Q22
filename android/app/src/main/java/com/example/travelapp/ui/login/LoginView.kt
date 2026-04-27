@@ -46,6 +46,8 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val authState = authViewModel.authState
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var resetEmail by remember { mutableStateOf("") }
 
     // Google Sign-In configuration
     val googleSignInClient = remember {
@@ -212,7 +214,7 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
-                    .clickable { },
+                    .clickable { showForgotPasswordDialog = true },
                 textAlign = androidx.compose.ui.text.style.TextAlign.End
             )
 
@@ -272,5 +274,37 @@ fun LoginScreen(
                 )
             }
         }
+    }
+
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showForgotPasswordDialog = false },
+            title = { Text("Khôi phục mật khẩu") },
+            text = {
+                Column {
+                    Text("Nhập email của bạn để nhận liên kết đặt lại mật khẩu.", fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        label = { Text("Email") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    authViewModel.resetPassword(resetEmail) // Lưu ý: file này bạn dùng biến authViewModel
+                    showForgotPasswordDialog = false
+                }) {
+                    Text("Gửi")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showForgotPasswordDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
     }
 }

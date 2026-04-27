@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
@@ -37,11 +38,10 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
-kotlin {
-    jvmToolchain(17)
-}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -58,8 +58,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    //Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-auth")
@@ -77,6 +76,18 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.5.1")
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
+
+    // For Markdown display
+    implementation("com.github.jeziellago:compose-markdown:0.5.0")
+
     //Cloudinary
     implementation("com.cloudinary:cloudinary-android:3.1.2")
+
+    // For Goole Maps
+    implementation("com.google.maps.android:maps-compose:4.3.3") // Thư viện chính cho Compose
+    implementation("com.google.android.gms:play-services-maps:18.2.0") // Core Google Maps
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 }

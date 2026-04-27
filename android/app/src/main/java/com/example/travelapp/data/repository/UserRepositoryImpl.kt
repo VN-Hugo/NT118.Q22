@@ -43,7 +43,12 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun registerUser(email: String, pass: String): String? {
         return try {
             val result = auth.createUserWithEmailAndPassword(email, pass).await()
-            result.user?.uid
+            val user = result.user
+
+            // --- ĐÂY LÀ DÒNG QUAN TRỌNG: GỬI EMAIL XÁC THỰC ---
+            user?.sendEmailVerification()?.await()
+
+            user?.uid
         } catch (e: Exception) {
             null
         }
@@ -131,6 +136,16 @@ class UserRepositoryImpl @Inject constructor(
             true
         } catch (e: Exception) {
             false
+        }
+    }
+
+    override suspend fun resetPassword(email: String): Result<Unit> {
+        return try {
+            // Gọi hàm của Firebase Auth
+            auth.sendPasswordResetEmail(email).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }
