@@ -22,9 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.travelapp.data.model.Property
+//import androidx.hilt.navigation.compose.hiltViewModel
 
 // LƯU Ý: Bạn hãy import PropertyRepository theo đúng đường dẫn trong app của bạn nhé!
 // Ví dụ: import com.example.travelapp.domain.repository.PropertyRepository
@@ -65,7 +67,7 @@ data class Deal(val title: String, val desc: String, val tag: String, val color:
 
 @Composable
 fun SmartTravelHomeScreen(
-    viewModel: HomeViewModel = viewModel(),
+    viewModel: HomeViewModel = hiltViewModel(),
     onPropertyClick: (String) -> Unit
 ) {
     // 1. Lắng nghe toàn bộ trạng thái từ ViewModel

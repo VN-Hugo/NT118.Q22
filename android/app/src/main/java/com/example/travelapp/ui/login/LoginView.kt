@@ -214,7 +214,7 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
-                    .clickable { },
+                    .clickable { showForgotPasswordDialog = true },
                 textAlign = androidx.compose.ui.text.style.TextAlign.End
             )
 
@@ -275,21 +275,14 @@ fun LoginScreen(
             }
         }
     }
-    TextButton(
-        onClick = { showForgotPasswordDialog = true },
-        modifier = Modifier.align(Alignment.End)
-    ) {
-        Text("Quên mật khẩu?", color = BrandTealColor)
-    }
 
-// Thêm hộp thoại Dialog ở cuối giao diện (bên ngoài Scaffold/Column chính):
     if (showForgotPasswordDialog) {
         AlertDialog(
             onDismissRequest = { showForgotPasswordDialog = false },
             title = { Text("Khôi phục mật khẩu") },
             text = {
                 Column {
-                    Text("Nhập email của bạn để nhận liên kết đặt lại mật khẩu.")
+                    Text("Nhập email của bạn để nhận liên kết đặt lại mật khẩu.", fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = resetEmail,
@@ -301,7 +294,7 @@ fun LoginScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.resetPassword(resetEmail)
+                    authViewModel.resetPassword(resetEmail) // Lưu ý: file này bạn dùng biến authViewModel
                     showForgotPasswordDialog = false
                 }) {
                     Text("Gửi")
