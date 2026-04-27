@@ -25,7 +25,7 @@ fun HotelBottomBar(
     NavigationBar(containerColor = Color.White) {
         val items = listOf(
             HotelNavigationItem("TỔNG QUAN", "dashboard", R.drawable.ic_dashboard),
-            HotelNavigationItem("KHÁCH SẠN", "hotels", R.drawable.ic_hotel),
+            HotelNavigationItem("KHÁCH SẠN", "hotels", R.drawable.ic_hotel_bed),
             HotelNavigationItem("ĐẶT PHÒNG", "bookings", R.drawable.ic_booking),
             HotelNavigationItem("PHÂN TÍCH", "analytics", R.drawable.ic_anaylytics),
             HotelNavigationItem("CÁ NHÂN", "profile", R.drawable.ic_profile)

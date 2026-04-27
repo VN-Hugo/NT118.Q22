@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import java.util.Calendar
 
 class BookingRepositoryImpl @Inject constructor(
     private val db: FirebaseFirestore
@@ -28,12 +29,10 @@ class BookingRepositoryImpl @Inject constructor(
 
     override suspend fun checkRoomAvailability(proId: String, roomTypeId: String, startDate: Long, endDate: Long): Int {
         return try {
-            // 1. Lấy tổng số phòng từ Property details
             val roomDoc = db.collection("Properties").document(proId)
                 .collection("RoomTypes").document(roomTypeId).get().await()
             val total = roomDoc.getLong("totalRooms")?.toInt() ?: 0
 
-            // 2. Tìm các đơn đặt phòng bị trùng lịch (status: confirmed hoặc pending)
             val bookingsSnap = bookingsCollection
                 .whereEqualTo("proId", proId)
                 .whereEqualTo("hotelBooking.roomTypeId", roomTypeId)
@@ -43,7 +42,6 @@ class BookingRepositoryImpl @Inject constructor(
             val occupiedRooms = bookingsSnap.documents.filter { doc ->
                 val bStart = doc.getLong("startDate") ?: 0L
                 val bEnd = doc.getLong("endDate") ?: 0L
-                // Logic giao thoa ngày: (StartA < EndB) AND (EndA > StartB)
                 startDate < bEnd && endDate > bStart
             }.sumOf { (it.get("hotelBooking.quantity") as? Long)?.toInt() ?: 1 }
 
@@ -58,14 +56,19 @@ class BookingRepositoryImpl @Inject constructor(
             .whereEqualTo("userId", userId)
             .orderBy("startDate", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                snapshot?.let {
-                    val bookings = it.toObjects(Booking::class.java)
-                    trySend(bookings)
-                }
+                if (error != null) { close(error); return@addSnapshotListener }
+                snapshot?.let { trySend(it.toObjects(Booking::class.java)) }
+            }
+        awaitClose { subscription.remove() }
+    }
+
+    override fun getOwnerBookings(ownerId: String): Flow<List<Booking>> = callbackFlow {
+        val subscription = bookingsCollection
+            .whereEqualTo("ownerId", ownerId)
+            .orderBy("startDate", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) { close(error); return@addSnapshotListener }
+                snapshot?.let { trySend(it.toObjects(Booking::class.java)) }
             }
         awaitClose { subscription.remove() }
     }
@@ -74,17 +77,47 @@ class BookingRepositoryImpl @Inject constructor(
         return try {
             val doc = bookingsCollection.document(bookId).get().await()
             doc.toObject(Booking::class.java)
-        } catch (e: Exception) {
-            null
-        }
+        } catch (e: Exception) { null }
+    }
+
+    override suspend fun updateBookingStatus(bookId: String, status: String): Boolean {
+        return try {
+            bookingsCollection.document(bookId).update("status", status).await()
+            true
+        } catch (e: Exception) { false }
     }
 
     override suspend fun cancelBooking(bookId: String): Boolean {
-        return try {
-            bookingsCollection.document(bookId).update("status", "cancelled").await()
-            true
-        } catch (e: Exception) {
-            false
-        }
+        return updateBookingStatus(bookId, "cancelled")
+    }
+
+    override fun getDailyOccupancy(proId: String, roomTypeId: String, startDate: Long, endDate: Long): Flow<Map<Long, Int>> = callbackFlow {
+        val subscription = bookingsCollection
+            .whereEqualTo("proId", proId)
+            .whereEqualTo("hotelBooking.roomTypeId", roomTypeId)
+            .whereIn("status", listOf("confirmed", "pending"))
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) { close(error); return@addSnapshotListener }
+                
+                val dailyCount = mutableMapOf<Long, Int>()
+                val bookings = snapshot?.toObjects(Booking::class.java) ?: emptyList()
+                
+                bookings.forEach { booking ->
+                    val cal = Calendar.getInstance()
+                    cal.timeInMillis = booking.startDate
+                    // Reset giờ về 0 để so sánh ngày
+                    cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0)
+                    
+                    while (cal.timeInMillis < booking.endDate) {
+                        val day = cal.timeInMillis
+                        if (day in startDate..endDate) {
+                            dailyCount[day] = (dailyCount[day] ?: 0) + (booking.hotelBooking?.quantity ?: 1)
+                        }
+                        cal.add(Calendar.DAY_OF_YEAR, 1)
+                    }
+                }
+                trySend(dailyCount)
+            }
+        awaitClose { subscription.remove() }
     }
 }

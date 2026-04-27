@@ -111,12 +111,13 @@ class PropertyDetailViewModel @Inject constructor(
         val room = selectedRoomType
         val start = startDate
         val end = endDate
+        val property = (state.value as? PropertyDetailState.Success)?.property
 
         if (uid == null) {
             _bookingUiState.value = BookingUiState.Error("Vui lòng đăng nhập để đặt phòng")
             return
         }
-        if (room == null || start == null || end == null) {
+        if (room == null || start == null || end == null || property == null) {
             _bookingUiState.value = BookingUiState.Error("Vui lòng chọn đầy đủ thông tin")
             return
         }
@@ -134,16 +135,16 @@ class PropertyDetailViewModel @Inject constructor(
                     return@launch
                 }
 
-                val property = (state.value as? PropertyDetailState.Success)?.property
                 val booking = Booking(
                     userId = uid,
+                    ownerId = property.ownerId, // QUAN TRỌNG: Phải gán ownerId để Owner có thể thấy đơn này
                     proId = proId,
-                    proName = property?.name ?: "",
-                    proImage = property?.images?.firstOrNull()?.url ?: "",
+                    proName = property.name,
+                    proImage = property.images.firstOrNull()?.url ?: "",
                     startDate = start,
                     endDate = end,
                     totalPrice = totalBookingPrice,
-                    status = "confirmed",
+                    status = "pending", // Mặc định là chờ duyệt
                     bookingType = "hotel",
                     hotelBooking = HotelBookingDetails(
                         roomTypeId = room.roomTypeId,

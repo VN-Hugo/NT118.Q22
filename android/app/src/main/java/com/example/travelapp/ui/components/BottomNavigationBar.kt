@@ -22,11 +22,11 @@ fun TravelBottomBar(
 ) {
     NavigationBar(containerColor = Color.White) {
         val items = listOf(
-            NavigationItem("HOME", "home", R.drawable.ic_home),
-            NavigationItem("EXPLORE", "explore", R.drawable.ic_explore),
-            NavigationItem("TRIPS", "trips", R.drawable.ic_trips),
-            NavigationItem("AI PLANNER", "ai_planner", R.drawable.ic_my_ai),
-            NavigationItem("PROFILE", "profile", R.drawable.ic_profile)
+            NavigationItem("TRANG CHỦ", "home", R.drawable.ic_home),
+            NavigationItem("KHÁM PHÁ", "explore", R.drawable.ic_explore),
+            NavigationItem("CHUYẾN ĐI", "trips", R.drawable.ic_trips),
+            NavigationItem("AI", "ai_planner", R.drawable.ic_my_ai),
+            NavigationItem("CÁ NHÂN", "profile", R.drawable.ic_profile)
         )
 
         items.forEach { item ->
