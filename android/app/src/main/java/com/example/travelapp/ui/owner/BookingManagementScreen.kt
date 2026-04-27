@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -31,6 +33,7 @@ private val BgGrayColor = Color(0xFFF8F9FA)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingManagementScreen(
+    onNavigateToCalendar: () -> Unit,
     viewModel: BookingManagementViewModel = hiltViewModel()
 ) {
     val state by viewModel.bookingState.collectAsState()
@@ -48,6 +51,16 @@ fun BookingManagementScreen(
     ) {
         TopAppBar(
             title = { Text("Quản lý đơn đặt", fontWeight = FontWeight.Bold, color = BrandTealColor) },
+            actions = {
+                IconButton(onClick = onNavigateToCalendar) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_history), // Bạn có thể đổi sang ic_calendar nếu có
+                        contentDescription = "Lịch phòng",
+                        tint = BrandTealColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
         )
 
@@ -65,7 +78,7 @@ fun BookingManagementScreen(
                 label = { Text(if (selectedHotelId == null) "Tất cả khách sạn" else "Đã chọn KS") },
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_hotel_bed),
+                        painter = painterResource(id = R.drawable.ic_camera), // Đổi sang ic_hotel nếu có
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
@@ -77,7 +90,7 @@ fun BookingManagementScreen(
                 label = { Text(if (selectedRoomId == null) "Tất cả phòng" else "Đã chọn phòng") },
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_bed),
+                        painter = painterResource(id = R.drawable.ic_history), // Đổi sang ic_bed nếu có
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
@@ -143,19 +156,13 @@ fun HotelFilterDialog(show: Boolean, hotels: List<Property>, onDismiss: () -> Un
             text = {
                 LazyColumn {
                     item {
-                        TextButton(
-                            onClick = { onSelect(null); onDismiss() },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Tất cả khách sạn", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Start)
+                        TextButton(onClick = { onSelect(null); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Tất cả khách sạn", textAlign = androidx.compose.ui.text.style.TextAlign.Start, modifier = Modifier.fillMaxWidth())
                         }
                     }
                     items(hotels) { hotel ->
-                        TextButton(
-                            onClick = { onSelect(hotel.proId); onDismiss() },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(hotel.name, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Start)
+                        TextButton(onClick = { onSelect(hotel.proId); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
+                            Text(hotel.name, textAlign = androidx.compose.ui.text.style.TextAlign.Start, modifier = Modifier.fillMaxWidth())
                         }
                     }
                 }
@@ -177,19 +184,13 @@ fun RoomFilterDialog(show: Boolean, rooms: List<RoomType>, onDismiss: () -> Unit
                 } else {
                     LazyColumn {
                         item {
-                            TextButton(
-                                onClick = { onSelect(null); onDismiss() },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Tất cả hạng phòng", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Start)
+                            TextButton(onClick = { onSelect(null); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
+                                Text("Tất cả hạng phòng", textAlign = androidx.compose.ui.text.style.TextAlign.Start, modifier = Modifier.fillMaxWidth())
                             }
                         }
                         items(rooms) { room ->
-                            TextButton(
-                                onClick = { onSelect(room.roomTypeId); onDismiss() },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(room.typeName, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Start)
+                            TextButton(onClick = { onSelect(room.roomTypeId); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
+                                Text(room.typeName, textAlign = androidx.compose.ui.text.style.TextAlign.Start, modifier = Modifier.fillMaxWidth())
                             }
                         }
                     }
@@ -213,15 +214,8 @@ fun BookingManagementCard(booking: Booking, onAccept: () -> Unit, onReject: () -
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier
-                    .size(48.dp)
-                    .background(Color(0xFFECEFF1), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_profile),
-                        contentDescription = null,
-                        tint = BrandTealColor,
-                        modifier = Modifier.size(24.dp)
-                    )
+                Box(Modifier.size(48.dp).background(Color(0xFFECEFF1), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                    Icon(painterResource(id = R.drawable.ic_camera), null, tint = BrandTealColor, modifier = Modifier.size(24.dp))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -239,7 +233,6 @@ fun BookingManagementCard(booking: Booking, onAccept: () -> Unit, onReject: () -
                         text = when(booking.status) {
                             "confirmed" -> "ĐÃ DUYỆT"
                             "pending" -> "CHỜ DUYỆT"
-                            "rejected" -> "BỊ TỪ CHỐI"
                             else -> "ĐÃ HỦY"
                         },
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -250,11 +243,11 @@ fun BookingManagementCard(booking: Booking, onAccept: () -> Unit, onReject: () -
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = BgGrayColor)
 
-            BookingInfoRow(painterResource(id = R.drawable.ic_calendar), dateRange)
+            BookingInfoRow(painterResource(id = R.drawable.ic_history), dateRange)
             booking.hotelBooking?.let {
-                BookingInfoRow(painterResource(id = R.drawable.ic_bed), "Số lượng: ${it.quantity} phòng")
+                BookingInfoRow(painterResource(id = R.drawable.ic_history), "Số lượng: ${it.quantity} phòng")
             }
-            BookingInfoRow(painterResource(id = R.drawable.ic_money), "Tổng thu: đ${String.format(Locale.getDefault(), "%,.0f", booking.totalPrice)}", true)
+            BookingInfoRow(painterResource(id = R.drawable.ic_history), "Tổng thu: đ${String.format(Locale.getDefault(), "%,.0f", booking.totalPrice)}", true)
 
             if (booking.status == "pending") {
                 Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
