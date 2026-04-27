@@ -133,4 +133,14 @@ class UserRepositoryImpl @Inject constructor(
             false
         }
     }
+
+    override suspend fun resetPassword(email: String): Result<Unit> {
+        return try {
+            // Gọi hàm của Firebase Auth
+            auth.sendPasswordResetEmail(email).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

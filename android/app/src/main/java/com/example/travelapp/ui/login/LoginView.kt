@@ -46,6 +46,8 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val authState = authViewModel.authState
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var resetEmail by remember { mutableStateOf("") }
 
     // Google Sign-In configuration
     val googleSignInClient = remember {
@@ -272,5 +274,44 @@ fun LoginScreen(
                 )
             }
         }
+    }
+    TextButton(
+        onClick = { showForgotPasswordDialog = true },
+        modifier = Modifier.align(Alignment.End)
+    ) {
+        Text("Quên mật khẩu?", color = BrandTealColor)
+    }
+
+// Thêm hộp thoại Dialog ở cuối giao diện (bên ngoài Scaffold/Column chính):
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showForgotPasswordDialog = false },
+            title = { Text("Khôi phục mật khẩu") },
+            text = {
+                Column {
+                    Text("Nhập email của bạn để nhận liên kết đặt lại mật khẩu.")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        label = { Text("Email") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.resetPassword(resetEmail)
+                    showForgotPasswordDialog = false
+                }) {
+                    Text("Gửi")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showForgotPasswordDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
     }
 }

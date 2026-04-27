@@ -95,4 +95,23 @@ class AuthViewModel @Inject constructor(
     fun resetState() {
         authState = AuthState.Idle
     }
+
+    fun resetPassword(email: String) {
+        if (email.isBlank()) {
+            authState = AuthState.Error("Vui lòng nhập email để reset mật khẩu.")
+            return
+        }
+        viewModelScope.launch {
+            authState = AuthState.Loading
+            val result = userRepository.resetPassword(email)
+            result.fold(
+                onSuccess = {
+                    authState = AuthState.Error("Email khôi phục đã được gửi. Vui lòng kiểm tra hộp thư!") // Dùng Error tạm để mượn Toast báo thành công, hoặc bạn tạo state riêng
+                },
+                onFailure = { e ->
+                    authState = AuthState.Error(e.message ?: "Lỗi gửi email")
+                }
+            )
+        }
+    }
 }

@@ -5,6 +5,7 @@ import com.example.travelapp.data.model.User
 import kotlinx.coroutines.flow.Flow
 
 interface UserRepository {
+    suspend fun resetPassword(email: String): Result<Unit>
     suspend fun loginUser(email: String, pass: String): Boolean
     suspend fun signInWithGoogle(idToken: String): Boolean
     suspend fun registerUser(email: String, pass: String): String?
