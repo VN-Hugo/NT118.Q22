@@ -45,15 +45,25 @@ fun RegisterScreen(
     val context = LocalContext.current
     val authState = viewModel.authState
 
+    // --- CẬP NHẬT LUỒNG XÁC THỰC EMAIL Ở ĐÂY ---
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Success -> {
-                Toast.makeText(context, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
-                onRegisterSuccess()
+                // 1. Hiển thị thông báo yêu cầu vào email
+                Toast.makeText(
+                    context,
+                    "Đăng ký thành công! Vui lòng kiểm tra Email (hoặc Thư rác) để xác thực tài khoản.",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                // 2. Reset state để tránh lỗi khi quay lại
                 viewModel.resetState()
+
+                // 3. Đá về trang Login thay vì vào Home
+                onBackClick()
             }
             is AuthState.Error -> {
-                Toast.makeText(context, authState.message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_SHORT).show()
                 viewModel.resetState()
             }
             else -> {}

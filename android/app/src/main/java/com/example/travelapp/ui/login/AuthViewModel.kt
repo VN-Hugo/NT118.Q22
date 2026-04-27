@@ -37,7 +37,15 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             val success = userRepository.loginUser(email, pass)
             if (success) {
-                fetchRoleAndSuccess()
+                val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+
+                // KIỂM TRA XEM ĐÃ XÁC NHẬN EMAIL CHƯA
+                if (currentUser != null && currentUser.isEmailVerified) {
+                    fetchRoleAndSuccess()
+                } else {
+                    authState = AuthState.Error("Tài khoản chưa xác thực. Vui lòng kiểm tra Email của bạn!")
+                     userRepository.logout()
+                }
             } else {
                 authState = AuthState.Error("Email hoặc mật khẩu không đúng")
             }
