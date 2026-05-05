@@ -3,172 +3,238 @@ package com.example.travelapp.ui.owner
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.example.travelapp.data.model.Review
+import java.text.SimpleDateFormat
+import java.util.*
 
-// Màu sắc theo thiết kế
-private val TealDark = Color(0xFF004D40)
-private val BgLightGray = Color(0xFFF8F9FA)
-private val AiCardBg = Color(0xFFE0F2F1)
+private val BrandTealReview = Color(0xFF005D67)
+private val ReviewScreenBgGray = Color(0xFFF8F9FA)
+private val AiCardBgReview = Color(0xFFE0F2F1)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewScreen(
-    onNavigate: (String) -> Unit
+    viewModel: ReviewManagementViewModel = hiltViewModel()
 ) {
-    // KHÔNG dùng HotelBottomBar ở đây nữa vì đã có ở OwnerDashboardContainer
-    Column(
+    val uiState by viewModel.uiState.collectAsState()
+    var showHotelPicker by remember { mutableStateOf(false) }
+
+    Scaffold(
+        containerColor = ReviewScreenBgGray,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column(modifier = Modifier.clickable { showHotelPicker = true }) {
+                        val hotelName = when (val state = uiState) {
+                            is ReviewManagementState.Success -> state.selectedHotel?.name ?: "Chọn khách sạn"
+                            else -> "Đang tải..."
+                        }
+                        Text(hotelName, fontWeight = FontWeight.Bold, color = BrandTealReview, fontSize = 18.sp)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Chạm để đổi khách sạn", fontSize = 11.sp, color = Color.Gray)
+                            Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                        }
+                    }
+                },
+                actions = { IconButton(onClick = {}) { Icon(Icons.Default.Notifications, null, tint = BrandTealReview) } },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            )
+        }
+    ) { padding ->
+        when (val state = uiState) {
+            is ReviewManagementState.Loading -> {
+                Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator(color = BrandTealReview) }
+            }
+            is ReviewManagementState.Success -> {
+                ReviewContent(padding, state)
+                
+                if (showHotelPicker) {
+                    HotelSelectionDialog(
+                        hotels = state.hotels,
+                        onDismiss = { showHotelPicker = false },
+                        onSelect = { 
+                            viewModel.selectHotel(it)
+                            showHotelPicker = false
+                        }
+                    )
+                }
+            }
+            is ReviewManagementState.Error -> {
+                Box(Modifier.fillMaxSize(), Alignment.Center) { Text(state.message, color = Color.Red) }
+            }
+        }
+    }
+}
+
+@Composable
+fun ReviewContent(padding: PaddingValues, state: ReviewManagementState.Success) {
+    val hotel = state.selectedHotel
+    val reviews = state.reviews
+
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .padding(padding)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        TopAppBar(
-            title = { Text("The Editorial Concierge", fontWeight = FontWeight.Bold, color = TealDark) },
-            actions = { IconButton(onClick = {}) { Icon(Icons.Default.Notifications, null) } },
-            navigationIcon = {
-                Box(Modifier.padding(8.dp).size(35.dp).background(Color.Gray, CircleShape))
-            }
-        )
+        item { Spacer(Modifier.height(8.dp)) }
 
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-            // 1. Tổng quan phản hồi
-            item {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                    Text("TỔNG QUAN PHẢN HỒI", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    Text("4.8", fontSize = 60.sp, fontWeight = FontWeight.Black, color = TealDark)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        repeat(4) { Icon(Icons.Default.Star, null, tint = TealDark) }
-                        Icon(Icons.Default.Lock, null, tint = TealDark)
-                    }
-                    Text("Dựa trên 1,248 đánh giá", fontSize = 12.sp, color = Color.Gray)
+        // 1. Chỉ số Rating tổng quát
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("ĐIỂM ĐÁNH GIÁ TRUNG BÌNH", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                    Text(
+                        text = String.format(Locale.getDefault(), "%.1f", hotel?.averageRating ?: 0f),
+                        fontSize = 54.sp,
+                        fontWeight = FontWeight.Black,
+                        color = BrandTealReview
+                    )
+                    RatingStars(hotel?.averageRating ?: 0f)
+                    Text("Dựa trên ${hotel?.reviewCount ?: 0} nhận xét", fontSize = 12.sp, color = Color.Gray)
                 }
             }
+        }
 
-            // 2. AI Insight Card
-            item {
-                Surface(color = AiCardBg, shape = RoundedCornerShape(12.dp)) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(TealDark, RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Lock, null, tint = Color.White, modifier = Modifier.size(20.dp))
+        // 2. AI Insight
+        item {
+            Surface(color = AiCardBgReview, shape = RoundedCornerShape(16.dp)) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                    Box(Modifier.size(36.dp).background(BrandTealReview, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Trợ lý AI phân tích", fontWeight = FontWeight.Bold, color = BrandTealReview, fontSize = 14.sp)
+                        val insight = if ((hotel?.averageRating ?: 0f) >= 4.0f) {
+                            "Khách hàng rất hài lòng! Điểm mạnh là sự chuyên nghiệp. Hãy tiếp tục phát huy."
+                        } else {
+                            "Có một số phản hồi chưa tốt. Bạn nên kiểm tra lại quy trình phục vụ hoặc vệ sinh phòng."
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text("AI Insight: Sự hài lòng cao", fontWeight = FontWeight.Bold, color = TealDark)
-                            Text(
-                                "Khách hàng thường xuyên khen ngợi về \"dịch vụ concierge tận tâm\"...",
-                                fontSize = 13.sp, color = TealDark.copy(alpha = 0.8f)
-                            )
-                        }
+                        Text(insight, fontSize = 13.sp, color = BrandTealReview.copy(alpha = 0.8f))
                     }
                 }
             }
+        }
 
-            // 3. Phân phối xếp hạng
+        // 3. Danh sách đánh giá chi tiết
+        item {
+            Text("Nhận xét từ khách hàng", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.DarkGray)
+        }
+
+        if (reviews.isEmpty()) {
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = Color.White), border = BorderStroke(1.dp, Color(0xFFEEEEEE))) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Phân phối xếp hạng", fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        RatingBarRow(5, 0.85f, "85%")
-                        RatingBarRow(4, 0.10f, "10%")
-                        RatingBarRow(3, 0.03f, "3%")
-                        RatingBarRow(2, 0.01f, "1%")
-                        RatingBarRow(1, 0.01f, "1%")
-                    }
+                Box(Modifier.fillMaxWidth().padding(vertical = 40.dp), Alignment.Center) {
+                    Text("Chưa có đánh giá nào", color = Color.Gray)
                 }
             }
-
-            // 4. Review Items
-            item {
-                ReviewItem(
-                    name = "Lê Thu Hà",
-                    info = "Đã lưu trú • 2 đêm • Phòng Suite",
-                    time = "2 ngày trước",
-                    content = "Trải nghiệm tuyệt vời tại khách sạn! Nhân viên concierge đã hỗ trợ tôi đặt chỗ tại nhà hàng Michelin...",
-                    hasImages = true,
-                    reply = "Chào chị Hà, cảm ơn chị đã dành thời gian đánh giá..."
-                )
+        } else {
+            items(reviews) { review ->
+                ReviewListItem(review)
             }
-            item { Spacer(modifier = Modifier.height(24.dp)) }
+        }
+        
+        item { Spacer(Modifier.height(32.dp)) }
+    }
+}
+
+@Composable
+fun RatingStars(rating: Float) {
+    Row(modifier = Modifier.padding(vertical = 8.dp)) {
+        repeat(5) { index ->
+            val isSelected = index < rating.toInt()
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = null,
+                tint = if (isSelected) Color(0xFFFFB300) else Color(0xFFE0E0E0),
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
 
 @Composable
-fun RatingBarRow(star: Int, progress: Float, percent: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-        Text(star.toString(), fontSize = 12.sp, modifier = Modifier.width(12.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier.weight(1f).height(8.dp).clip(CircleShape),
-            color = TealDark,
-            trackColor = Color(0xFFEEEEEE)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(percent, fontSize = 12.sp, color = Color.Gray, modifier = Modifier.width(30.dp))
+fun ReviewListItem(review: Review) {
+    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (review.userAvatar.isNotEmpty()) {
+                    AsyncImage(
+                        model = review.userAvatar,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(Modifier.size(36.dp).background(Color.LightGray, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(review.username, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(sdf.format(Date(review.createdAt)), fontSize = 11.sp, color = Color.Gray)
+                }
+                Row {
+                    repeat(review.rating) {
+                        Icon(Icons.Default.Star, null, tint = Color(0xFFFFB300), modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(review.comment, fontSize = 14.sp, color = Color.DarkGray, lineHeight = 20.sp)
+        }
     }
 }
 
 @Composable
-fun ReviewItem(name: String, info: String, time: String, content: String, hasImages: Boolean, reply: String? = null) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(40.dp).background(Color.LightGray, CircleShape))
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.Bold)
-                Text(info, fontSize = 11.sp, color = Color.Gray)
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Row { repeat(5) { Icon(Icons.Default.Star, null, tint = TealDark, modifier = Modifier.size(16.dp)) } }
-                Text(time, fontSize = 11.sp, color = Color.Gray)
-            }
-        }
-        Text(content, fontSize = 14.sp, modifier = Modifier.padding(vertical = 12.dp))
-
-        if (hasImages) {
-            Row(modifier = Modifier.height(100.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f).fillMaxHeight().background(Color.LightGray, RoundedCornerShape(8.dp)))
-                Box(Modifier.weight(1f).fillMaxHeight().background(Color.DarkGray, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                    Text("+2 ảnh", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        if (reply != null) {
-            Box(modifier = Modifier.padding(top = 12.dp).background(BgLightGray, RoundedCornerShape(8.dp)).padding(12.dp)) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Lock, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
-                        Text(" Bạn đã phản hồi:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TealDark)
+fun HotelSelectionDialog(hotels: List<com.example.travelapp.data.model.Property>, onDismiss: () -> Unit, onSelect: (String) -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Chọn khách sạn", fontWeight = FontWeight.Bold) },
+        text = {
+            LazyColumn {
+                items(hotels) { hotel ->
+                    TextButton(
+                        onClick = { onSelect(hotel.proId) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(hotel.name, modifier = Modifier.fillMaxWidth())
                     }
-                    Text(reply, fontSize = 13.sp, color = Color.DarkGray)
                 }
             }
-        }
-    }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Đóng") } }
+    )
 }

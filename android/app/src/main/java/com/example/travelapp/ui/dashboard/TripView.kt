@@ -28,12 +28,30 @@ import java.util.*
 @Composable
 fun MyTripsScreen(
     onBookingClick: (String) -> Unit,
-    viewModel: TripViewModel = hiltViewModel()
+    viewModel: TripViewModel = hiltViewModel(),
+    reviewViewModel: ReviewViewModel = hiltViewModel()
 ) {
     val tripState by viewModel.tripState.collectAsState()
+    val reviewUiState by reviewViewModel.uiState.collectAsState()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Sắp tới", "Đã lưu", "Đã đi")
     val context = LocalContext.current
+
+    var selectedBookingForReview by remember { mutableStateOf<Booking?>(null) }
+
+    LaunchedEffect(reviewUiState) {
+        when (reviewUiState) {
+            is ReviewUiState.Success -> {
+                Toast.makeText(context, "Cảm ơn bạn đã đánh giá!", Toast.LENGTH_SHORT).show()
+                selectedBookingForReview = null
+                reviewViewModel.resetState()
+            }
+            is ReviewUiState.Error -> {
+                Toast.makeText(context, (reviewUiState as ReviewUiState.Error).message, Toast.LENGTH_SHORT).show()
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -86,13 +104,16 @@ fun MyTripsScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             items(currentList, key = { it.bookId }) { booking ->
+                                val isReviewed = state.reviewedBookingIds.contains(booking.bookId)
                                 BookingTripCard(
                                     booking = booking,
+                                    isReviewed = isReviewed,
                                     onClick = { onBookingClick(booking.proId) },
                                     onCancel = {
                                         viewModel.cancelBooking(booking.bookId)
                                         Toast.makeText(context, "Đã gửi yêu cầu hủy", Toast.LENGTH_SHORT).show()
-                                    }
+                                    },
+                                    onReview = { selectedBookingForReview = booking }
                                 )
                             }
                         }
@@ -102,7 +123,7 @@ fun MyTripsScreen(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("Lỗi: ${state.message}", color = Color.Red, modifier = Modifier.padding(16.dp))
-                            Button(onClick = { /* Refresh logic */ }) {
+                            Button(onClick = { /* Refresh logic could go here */ }) {
                                 Text("Thử lại")
                             }
                         }
@@ -111,10 +132,70 @@ fun MyTripsScreen(
             }
         }
     }
+
+    if (selectedBookingForReview != null) {
+        ReviewDialog(
+            onDismiss = { selectedBookingForReview = null },
+            onSubmit = { reviewViewModel.submitReview(selectedBookingForReview!!) },
+            viewModel = reviewViewModel
+        )
+    }
 }
 
 @Composable
-fun BookingTripCard(booking: Booking, onClick: () -> Unit, onCancel: () -> Unit) {
+fun ReviewDialog(
+    onDismiss: () -> Unit,
+    onSubmit: () -> Unit,
+    viewModel: ReviewViewModel
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Đánh giá khách sạn", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text("Trải nghiệm của bạn như thế nào?")
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    repeat(5) { index ->
+                        val starIndex = index + 1
+                        IconButton(onClick = { viewModel.rating = starIndex }) {
+                            Icon(
+                                if (starIndex <= viewModel.rating) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = null,
+                                tint = if (starIndex <= viewModel.rating) Color(0xFFFFB300) else Color.Gray,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = viewModel.comment,
+                    onValueChange = { viewModel.comment = it },
+                    label = { Text("Nhận xét của bạn...") },
+                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onSubmit) { Text("Gửi đánh giá") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Hủy") }
+        }
+    )
+}
+
+@Composable
+fun BookingTripCard(
+    booking: Booking,
+    isReviewed: Boolean,
+    onClick: () -> Unit,
+    onCancel: () -> Unit,
+    onReview: () -> Unit
+) {
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     val dateRange = "${sdf.format(Date(booking.startDate))} - ${sdf.format(Date(booking.endDate))}"
 
@@ -139,6 +220,7 @@ fun BookingTripCard(booking: Booking, onClick: () -> Unit, onCancel: () -> Unit)
                 
                 val statusColor = when (booking.status) {
                     "confirmed" -> Color(0xFF4CAF50)
+                    "completed" -> Color(0xFF2196F3)
                     "pending" -> Color(0xFFFFC107)
                     else -> Color(0xFFF44336)
                 }
@@ -149,6 +231,7 @@ fun BookingTripCard(booking: Booking, onClick: () -> Unit, onCancel: () -> Unit)
                 ) {
                     val statusText = when(booking.status) {
                         "confirmed" -> "ĐÃ XÁC NHẬN"
+                        "completed" -> "HOÀN THÀNH"
                         "pending" -> "CHỜ XỬ LÝ"
                         "rejected" -> "BỊ TỪ CHỐI"
                         else -> "ĐÃ HỦY"
@@ -179,13 +262,26 @@ fun BookingTripCard(booking: Booking, onClick: () -> Unit, onCancel: () -> Unit)
                         color = Color.Black
                     )
                     
-                    if (booking.status == "pending") {
-                        TextButton(onClick = onCancel) {
-                            Text("Hủy đặt", color = Color.Red, fontWeight = FontWeight.Bold)
+                    when {
+                        booking.status == "pending" -> {
+                            TextButton(onClick = onCancel) {
+                                Text("Hủy đặt", color = Color.Red, fontWeight = FontWeight.Bold)
+                            }
                         }
-                    } else {
-                        TextButton(onClick = onClick) {
-                            Text("Xem lại >", color = Color(0xFF2196F3), fontWeight = FontWeight.Bold)
+                        (booking.status == "completed" || (booking.status == "confirmed" && booking.endDate <= System.currentTimeMillis())) && !isReviewed -> {
+                            Button(
+                                onClick = onReview,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Text("Đánh giá", color = Color.White, fontSize = 12.sp)
+                            }
+                        }
+                        else -> {
+                            TextButton(onClick = onClick) {
+                                Text("Xem lại >", color = Color(0xFF2196F3), fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
@@ -201,7 +297,7 @@ fun EmptyTripState(tabName: String) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(Icons.Default.Person, null, modifier = Modifier.size(80.dp), tint = Color.LightGray)
+        Icon(Icons.Default.ConfirmationNumber, null, modifier = Modifier.size(80.dp), tint = Color.LightGray)
         Spacer(modifier = Modifier.height(16.dp))
         Text("Không có chuyến đi $tabName", color = Color.Gray, fontWeight = FontWeight.Medium)
     }

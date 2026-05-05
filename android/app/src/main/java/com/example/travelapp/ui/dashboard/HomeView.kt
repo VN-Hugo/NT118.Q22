@@ -9,8 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -22,61 +20,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.travelapp.data.model.Property
-//import androidx.hilt.navigation.compose.hiltViewModel
-
-// LƯU Ý: Bạn hãy import PropertyRepository theo đúng đường dẫn trong app của bạn nhé!
-// Ví dụ: import com.example.travelapp.domain.repository.PropertyRepository
-// Ở đây mình tạm comment lại để tránh báo đỏ nếu sai đường dẫn
-// import com.example.travelapp.repository.PropertyRepository
+import java.util.Locale
 
 data class Deal(val title: String, val desc: String, val tag: String, val color: Color)
-
-//class HomeViewModel : ViewModel() {
-//    // 1. Khởi tạo kho dữ liệu mới (Sửa lại tên repository cho đúng với file của bạn)
-//    // private val repository = PropertyRepository()
-//
-//    // 2. Chuyển từ List<Hotel> sang List<Property>
-//    var propertyList = mutableStateOf<List<Property>>(emptyList())
-//        private set
-//
-//    // 3. Hàm gọi dữ liệu
-//    fun loadProperties() {
-//        // LƯU Ý: Bỏ comment và gọi đúng hàm lấy danh sách trong PropertyRepository của bạn
-//        /*
-//        repository.getAllProperties(
-//            onSuccess = { data ->
-//                propertyList.value = data
-//            },
-//            onFailure = { exception ->
-//                // Xử lý báo lỗi ở đây nếu cần
-//            }
-//        )
-//        */
-//
-//        // Tạm thời tạo data giả (Mock Data) để bạn thấy UI không bị lỗi:
-//        propertyList.value = listOf(
-//            Property(name = "Khách sạn Mường Thanh", address = "Đà Nẵng", averageRating = 4.5f),
-//            Property(name = "Vinpearl Resort", address = "Nha Trang", averageRating = 4.8f)
-//        )
-//    }
-//}
 
 @Composable
 fun SmartTravelHomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onPropertyClick: (String) -> Unit
 ) {
-    // 1. Lắng nghe toàn bộ trạng thái từ ViewModel
     val homeState by viewModel.homeState.collectAsState()
 
-// 2. Tự động bóc tách danh sách từ trạng thái Success
     val properties = when (homeState) {
         is HomeState.Success -> (homeState as HomeState.Success).suggestedHotels
-        else -> emptyList() // Trả về danh sách rỗng nếu đang Loading hoặc bị Error
+        else -> emptyList()
     }
 
     Column(
@@ -89,19 +49,16 @@ fun SmartTravelHomeScreen(
         SearchBar()
         FeaturedCard()
 
-        SectionHeader(title = "Suggested Properties", hasSeeAll = true)
+        SectionHeader(title = "Gợi ý cho bạn", hasSeeAll = true)
 
-        // Truyền dữ liệu mới vào
-        PropertyList(properties = properties)
+        PropertyList(properties = properties, onPropertyClick = onPropertyClick)
 
-        SectionHeader(title = "Limited Time Deals", hasSeeAll = false)
+        SectionHeader(title = "Ưu đãi đặc biệt", hasSeeAll = false)
         DealsList()
 
-        Spacer(modifier = Modifier.height(24.dp)) // Tạo khoảng trống cuối trang
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
-
-// --- Thành phần UI nhỏ ---
 
 @Composable
 fun TopBar() {
@@ -114,7 +71,9 @@ fun TopBar() {
     ) {
         Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color(0xFF1976D2))
         Text("Smart Travel AI", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.Gray)
+        IconButton(onClick = { /* Handle notifications */ }) {
+            Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.Gray)
+        }
     }
 }
 
@@ -127,7 +86,7 @@ fun SearchBar() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        placeholder = { Text("Search destinations, hotels...", color = Color.Gray) },
+        placeholder = { Text("Bạn muốn đi đâu?", color = Color.Gray) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         shape = RoundedCornerShape(24.dp),
         colors = TextFieldDefaults.colors(
@@ -148,8 +107,16 @@ fun FeaturedCard() {
             .height(220.dp)
             .clip(RoundedCornerShape(24.dp))
     ) {
-        // Tạm thời dùng màu xám, sau này bạn thay bằng Image()
-        Box(modifier = Modifier.fillMaxSize().background(Color.DarkGray))
+        // Ảnh nền mẫu về du lịch Việt Nam
+        AsyncImage(
+            model = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070&auto=format&fit=crop",
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+        
+        // Overlay để chữ dễ đọc hơn
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)))
 
         Column(modifier = Modifier.align(Alignment.BottomStart).padding(20.dp)) {
             Surface(
@@ -157,7 +124,7 @@ fun FeaturedCard() {
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    text = "FEATURED DESTINATION",
+                    text = "ĐIỂM ĐẾN NỔI BẬT",
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -165,7 +132,7 @@ fun FeaturedCard() {
                 )
             }
             Text(
-                text = "Discover the Magic of\nGreece",
+                text = "Khám phá vẻ đẹp kỳ ảo\ncủa Vịnh Hạ Long",
                 color = Color.White,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
@@ -185,41 +152,58 @@ fun SectionHeader(title: String, hasSeeAll: Boolean) {
     ) {
         Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         if (hasSeeAll) {
-            Text("See all", color = Color(0xFF1976D2), fontSize = 14.sp)
+            Text("Xem tất cả", color = Color(0xFF1976D2), fontSize = 14.sp, modifier = Modifier.clickable { })
         }
     }
 }
 
 @Composable
-fun PropertyList(properties: List<Property>) {
+fun PropertyList(properties: List<Property>, onPropertyClick: (String) -> Unit) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(properties) { property ->
             Card(
-                modifier = Modifier.width(220.dp),
+                modifier = Modifier
+                    .width(220.dp)
+                    .clickable { onPropertyClick(property.proId) },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(4.dp)
             ) {
                 Column {
-                    Box(modifier = Modifier.height(140.dp).fillMaxWidth().background(Color.LightGray))
+                    val imageUrl = property.images.firstOrNull { it.isPrimary }?.url ?: property.images.firstOrNull()?.url
+                    if (imageUrl != null) {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = null,
+                            modifier = Modifier.height(140.dp).fillMaxWidth(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(modifier = Modifier.height(140.dp).fillMaxWidth().background(Color.LightGray))
+                    }
+                    
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                            // Gọi property.name
-                            Text(property.name, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(property.name, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.weight(1f))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Star, null, tint = Color(0xFFFFB300), modifier = Modifier.size(14.dp))
-                                // Ép kiểu float thành string cho averageRating
-                                Text(property.averageRating.toString(), fontSize = 12.sp, color = Color.Gray)
+                                Text(String.format("%.1f", property.averageRating), fontSize = 12.sp, color = Color.Gray)
                             }
                         }
-                        // Đổi location thành address
-                        Text(property.address, fontSize = 12.sp, color = Color.Gray)
-
-                        // Đã ẩn phần giá tiền vì Property hiện tại không lưu giá cơ sở
-                        // Text("Đang cập nhật/night", color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
+                        Text(property.address, fontSize = 12.sp, color = Color.Gray, maxLines = 1)
+                        
+                        if (property.price > 0) {
+                            Text(
+                                text = "Từ đ${String.format(Locale.getDefault(), "%,.0f", property.price)} / đêm",
+                                color = Color(0xFF1976D2),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -230,8 +214,8 @@ fun PropertyList(properties: List<Property>) {
 @Composable
 fun DealsList() {
     val deals = listOf(
-        Deal("Italian Riviera Escape", "Save 30% on 5-night bookings", "-30%", Color(0xFF1976D2)),
-        Deal("Kyoto Zen Experience", "AI-planned custom itinerary", "Free AI", Color(0xFF1976D2))
+        Deal("Kỳ nghỉ Đà Lạt", "Giảm 30% khi đặt từ 2 đêm", "-30%", Color(0xFFE91E63)),
+        Deal("Phú Quốc rực rỡ", "AI lên lịch trình tham quan miễn phí", "Free AI", Color(0xFF1976D2))
     )
     deals.forEach { deal ->
         Surface(
@@ -243,7 +227,9 @@ fun DealsList() {
             color = Color.White
         ) {
             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(60.dp).clip(RoundedCornerShape(12.dp)).background(Color.LightGray))
+                Box(modifier = Modifier.size(60.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFBBDEFB))) {
+                    Icon(Icons.Default.CardGiftcard, null, modifier = Modifier.align(Alignment.Center), tint = Color(0xFF1976D2))
+                }
                 Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                     Text(deal.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Text(deal.desc, fontSize = 12.sp, color = Color.Gray)

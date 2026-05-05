@@ -9,8 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,7 +52,7 @@ fun BookingManagementScreen(
             actions = {
                 IconButton(onClick = onNavigateToCalendar) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_history), // Bạn có thể đổi sang ic_calendar nếu có
+                        painter = painterResource(id = R.drawable.ic_calendar),
                         contentDescription = "Lịch phòng",
                         tint = BrandTealColor,
                         modifier = Modifier.size(24.dp)
@@ -78,7 +76,7 @@ fun BookingManagementScreen(
                 label = { Text(if (selectedHotelId == null) "Tất cả khách sạn" else "Đã chọn KS") },
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_camera), // Đổi sang ic_hotel nếu có
+                        painter = painterResource(id = R.drawable.ic_hotel),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
@@ -90,7 +88,7 @@ fun BookingManagementScreen(
                 label = { Text(if (selectedRoomId == null) "Tất cả phòng" else "Đã chọn phòng") },
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_history), // Đổi sang ic_bed nếu có
+                        painter = painterResource(id = R.drawable.ic_bed),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
@@ -98,7 +96,7 @@ fun BookingManagementScreen(
             )
             if (selectedHotelId != null || selectedRoomId != null) {
                 IconButton(onClick = { viewModel.onHotelSelected(null) }) {
-                    Icon(painterResource(id = R.drawable.ic_filter), contentDescription = "Bỏ lọc", tint = Color.Red)
+                    Icon(Icons.Default.FilterListOff, contentDescription = "Bỏ lọc", tint = Color.Red)
                 }
             }
         }
@@ -134,7 +132,8 @@ fun BookingManagementScreen(
                             BookingManagementCard(
                                 booking = booking,
                                 onAccept = { viewModel.updateStatus(booking.bookId, "confirmed") },
-                                onReject = { viewModel.updateStatus(booking.bookId, "rejected") }
+                                onReject = { viewModel.updateStatus(booking.bookId, "rejected") },
+                                onComplete = { viewModel.updateStatus(booking.bookId, "completed") }
                             )
                         }
                     }
@@ -144,6 +143,97 @@ fun BookingManagementScreen(
                 Box(Modifier.fillMaxSize(), Alignment.Center) { Text(currentState.message, color = Color.Red) }
             }
         }
+    }
+}
+
+@Composable
+fun BookingManagementCard(
+    booking: Booking, 
+    onAccept: () -> Unit, 
+    onReject: () -> Unit,
+    onComplete: () -> Unit
+) {
+    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val dateRange = "${sdf.format(Date(booking.startDate))} - ${sdf.format(Date(booking.endDate))}"
+
+    Surface(
+        color = Color.White,
+        shape = RoundedCornerShape(16.dp),
+        shadowElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(48.dp).background(Color(0xFFECEFF1), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                    Icon(painterResource(id = R.drawable.ic_profile), null, tint = BrandTealColor, modifier = Modifier.size(24.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Đơn: #${booking.bookId.takeLast(6)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(booking.proName, fontSize = 12.sp, color = Color.Gray, maxLines = 1)
+                }
+
+                val statusColor = when(booking.status) {
+                    "confirmed" -> Color(0xFF4CAF50)
+                    "completed" -> Color(0xFF2196F3)
+                    "pending" -> Color(0xFFFFC107)
+                    else -> Color(0xFFF44336)
+                }
+                Surface(color = statusColor.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
+                    Text(
+                        text = when(booking.status) {
+                            "confirmed" -> "ĐÃ XÁC NHẬN"
+                            "completed" -> "HOÀN THÀNH"
+                            "pending" -> "CHỜ DUYỆT"
+                            "rejected" -> "BỊ TỪ CHỐI"
+                            else -> "ĐÃ HỦY"
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = BgGrayColor)
+
+            BookingInfoRow(painterResource(id = R.drawable.ic_calendar), dateRange)
+            booking.hotelBooking?.let {
+                BookingInfoRow(painterResource(id = R.drawable.ic_bed), "Số lượng: ${it.quantity} phòng")
+            }
+            BookingInfoRow(painterResource(id = R.drawable.ic_money), "Tổng thu: đ${String.format(Locale.getDefault(), "%,.0f", booking.totalPrice)}", true)
+
+            when (booking.status) {
+                "pending" -> {
+                    Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(onClick = onAccept, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = BrandTealColor), shape = RoundedCornerShape(12.dp)) {
+                            Text("Duyệt đơn", fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(onClick = onReject, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color.Red)) {
+                            Text("Từ chối", color = Color.Red, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                "confirmed" -> {
+                    Button(
+                        onClick = onComplete,
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Hoàn thành (Check-out)", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BookingInfoRow(icon: Painter, text: String, isPrice: Boolean = false) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+        Icon(icon, null, tint = if (isPrice) BrandTealColor else Color.Gray, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text, fontSize = 13.sp, color = if (isPrice) BrandTealColor else Color.DarkGray, fontWeight = if (isPrice) FontWeight.Bold else FontWeight.Normal)
     }
 }
 
@@ -198,76 +288,5 @@ fun RoomFilterDialog(show: Boolean, rooms: List<RoomType>, onDismiss: () -> Unit
             },
             confirmButton = { TextButton(onClick = onDismiss) { Text("Đóng") } }
         )
-    }
-}
-
-@Composable
-fun BookingManagementCard(booking: Booking, onAccept: () -> Unit, onReject: () -> Unit) {
-    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    val dateRange = "${sdf.format(Date(booking.startDate))} - ${sdf.format(Date(booking.endDate))}"
-
-    Surface(
-        color = Color.White,
-        shape = RoundedCornerShape(16.dp),
-        shadowElevation = 2.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(48.dp).background(Color(0xFFECEFF1), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                    Icon(painterResource(id = R.drawable.ic_camera), null, tint = BrandTealColor, modifier = Modifier.size(24.dp))
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Đơn: #${booking.bookId.takeLast(6)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(booking.proName, fontSize = 12.sp, color = Color.Gray, maxLines = 1)
-                }
-
-                val statusColor = when(booking.status) {
-                    "confirmed" -> Color(0xFF4CAF50)
-                    "pending" -> Color(0xFFFFC107)
-                    else -> Color(0xFFF44336)
-                }
-                Surface(color = statusColor.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
-                    Text(
-                        text = when(booking.status) {
-                            "confirmed" -> "ĐÃ DUYỆT"
-                            "pending" -> "CHỜ DUYỆT"
-                            else -> "ĐÃ HỦY"
-                        },
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = BgGrayColor)
-
-            BookingInfoRow(painterResource(id = R.drawable.ic_history), dateRange)
-            booking.hotelBooking?.let {
-                BookingInfoRow(painterResource(id = R.drawable.ic_history), "Số lượng: ${it.quantity} phòng")
-            }
-            BookingInfoRow(painterResource(id = R.drawable.ic_history), "Tổng thu: đ${String.format(Locale.getDefault(), "%,.0f", booking.totalPrice)}", true)
-
-            if (booking.status == "pending") {
-                Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = onAccept, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = BrandTealColor), shape = RoundedCornerShape(12.dp)) {
-                        Text("Duyệt đơn", fontWeight = FontWeight.Bold)
-                    }
-                    OutlinedButton(onClick = onReject, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color.Red)) {
-                        Text("Từ chối", color = Color.Red, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun BookingInfoRow(icon: Painter, text: String, isPrice: Boolean = false) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-        Icon(icon, null, tint = if (isPrice) BrandTealColor else Color.Gray, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text, fontSize = 13.sp, color = if (isPrice) BrandTealColor else Color.DarkGray, fontWeight = if (isPrice) FontWeight.Bold else FontWeight.Normal)
     }
 }
