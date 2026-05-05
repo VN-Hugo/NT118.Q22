@@ -28,7 +28,8 @@ class HotelManagementViewModel @Inject constructor(
         if (ownerId == null) {
             flowOf(HotelManagementState.Error("Người dùng chưa đăng nhập"))
         } else {
-            propertyRepository.getProperties().map { allProperties ->
+            // TRUYỀN status = null ĐỂ LẤY CẢ PENDING/REJECTED
+            propertyRepository.getProperties(status = null).map { allProperties ->
                 val ownerHotels = allProperties.filter { it.ownerId == ownerId }
                 HotelManagementState.Success(ownerHotels)
             }

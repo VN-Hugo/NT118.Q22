@@ -12,7 +12,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.travelapp.Routes
 import com.example.travelapp.ui.components.TravelBottomBar
-import com.example.travelapp.ui.planner.AIPlannerScreen
+
 
 @Composable
 fun MainDashboardContainer(rootNavController: NavHostController) {

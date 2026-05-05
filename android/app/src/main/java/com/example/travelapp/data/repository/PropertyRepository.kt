@@ -7,7 +7,9 @@ import com.example.travelapp.data.model.RoomType
 import kotlinx.coroutines.flow.Flow
 
 interface PropertyRepository {
-    fun getProperties(type: String? = null): Flow<List<Property>>
+    // Luôn có tham số status để lọc linh hoạt
+    fun getProperties(type: String? = null, status: String? = "APPROVED"): Flow<List<Property>>
+
     suspend fun getPropertyById(proId: String): Property?
     fun searchProperties(query: String): Flow<List<Property>>
     

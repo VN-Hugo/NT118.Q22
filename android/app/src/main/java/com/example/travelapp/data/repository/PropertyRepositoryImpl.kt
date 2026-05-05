@@ -21,8 +21,13 @@ class PropertyRepositoryImpl @Inject constructor(
     private val propertiesCollection = db.collection("Properties")
     private val bookingsCollection = db.collection("Bookings")
 
-    override fun getProperties(type: String?): Flow<List<Property>> = callbackFlow {
-        var query: Query = propertiesCollection.whereEqualTo("status", "APPROVED")
+    override fun getProperties(type: String?, status: String?): Flow<List<Property>> = callbackFlow {
+        var query: Query = propertiesCollection
+        
+        if (status != null) {
+            query = query.whereEqualTo("status", status)
+        }
+
         if (type != null) {
             query = query.whereEqualTo("type", type)
         }
