@@ -28,4 +28,10 @@ abstract class RepositoryModule {
     abstract fun bindBookingRepository(
         bookingRepositoryImpl: BookingRepositoryImpl
     ): BookingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPlanRepository(
+        planRepositoryImpl: PlanRepositoryImpl
+    ): PlanRepository
 }

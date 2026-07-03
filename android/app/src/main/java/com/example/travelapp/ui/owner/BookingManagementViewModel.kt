@@ -77,7 +77,7 @@ class BookingManagementViewModel @Inject constructor(
                         }
 
                         _bookingState.value = BookingManagementState.Success(
-                            allBookings = bookings,
+                            allBookings = bookings.sortedByDescending { it.startDate },
                             hotels = ownerHotels,
                             roomTypesMap = roomMap
                         )

@@ -23,4 +23,6 @@ interface PropertyRepository {
 
     suspend fun updatePropertyStatus(proId: String, status: String): Boolean
     suspend fun deleteProperty(proId: String): Boolean
+
+    suspend fun getPropertiesByDestination(destination: String): List<Property>
 }

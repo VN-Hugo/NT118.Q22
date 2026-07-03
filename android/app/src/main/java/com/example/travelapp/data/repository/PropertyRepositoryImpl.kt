@@ -183,4 +183,16 @@ class PropertyRepositoryImpl @Inject constructor(
             false
         }
     }
+
+    override suspend fun getPropertiesByDestination(destination: String): List<Property> {
+        return try {
+            val snapshot = propertiesCollection
+                .whereEqualTo("status", "APPROVED")
+                .whereEqualTo("desName", destination)
+                .get().await()
+            snapshot.toObjects(Property::class.java)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 }

@@ -70,13 +70,20 @@ fun MainDashboardContainer(rootNavController: NavHostController) {
                     onBookingClick = { proId ->
                         // Điều hướng đến chi tiết khách sạn từ đơn đặt phòng
                         rootNavController.navigate("property_detail/$proId")
+                    },
+                    onPropertyClick = { proId ->
+                        rootNavController.navigate("property_detail/$proId")
                     }
                 )
             }
 
             // 4. Tab Trợ lý AI Planner
             composable("ai_planner") {
-                AIPlannerScreen()
+                AIPlannerScreen(
+                    onPropertyClick = { proId ->
+                        rootNavController.navigate("property_detail/$proId")
+                    }
+                )
             }
 
             // 5. Tab Hồ sơ cá nhân

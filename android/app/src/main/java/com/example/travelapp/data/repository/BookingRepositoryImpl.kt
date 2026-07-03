@@ -54,7 +54,6 @@ class BookingRepositoryImpl @Inject constructor(
     override fun getUserBookings(userId: String): Flow<List<Booking>> = callbackFlow {
         val subscription = bookingsCollection
             .whereEqualTo("userId", userId)
-            .orderBy("startDate", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) { close(error); return@addSnapshotListener }
                 snapshot?.let { trySend(it.toObjects(Booking::class.java)) }
@@ -65,7 +64,6 @@ class BookingRepositoryImpl @Inject constructor(
     override fun getOwnerBookings(ownerId: String): Flow<List<Booking>> = callbackFlow {
         val subscription = bookingsCollection
             .whereEqualTo("ownerId", ownerId)
-            .orderBy("startDate", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) { close(error); return@addSnapshotListener }
                 snapshot?.let { trySend(it.toObjects(Booking::class.java)) }

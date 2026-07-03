@@ -12,6 +12,9 @@ import com.example.travelapp.data.model.User
 import com.example.travelapp.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 
 sealed class AuthState {
     object Idle : AuthState()
@@ -77,25 +80,39 @@ class AuthViewModel @Inject constructor(
     fun signUp(email: String, pass: String, name: String, role: String) {
         authState = AuthState.Loading
         viewModelScope.launch {
-            // 1. Đăng ký tài khoản trên Firebase Auth
-            val uid = userRepository.registerUser(email, pass)
-            if (uid != null) {
-                // 2. Tạo đối tượng User để lưu vào Firestore
-                val user = User(
-                    uid = uid,
-                    fullName = name,
-                    email = email,
-                    role = role
-                )
-                // 3. Lưu thông tin User
-                val saved = userRepository.saveUser(user)
-                if (saved) {
-                    authState = AuthState.Success(role)
+            try {
+                // 1. Đăng ký tài khoản trên Firebase Auth
+                val uid = userRepository.registerUser(email, pass)
+
+                if (uid != null) {
+                    // 2. Tạo đối tượng User để lưu vào Firestore
+                    val user = User(
+                        uid = uid,
+                        fullName = name,
+                        email = email,
+                        role = role
+                    )
+                    // 3. Lưu thông tin User
+                    val saved = userRepository.saveUser(user)
+                    if (saved) {
+                        authState = AuthState.Success(role)
+                    } else {
+                        authState = AuthState.Error("Lưu thông tin người dùng thất bại")
+                    }
                 } else {
-                    authState = AuthState.Error("Lưu thông tin người dùng thất bại")
+                    authState = AuthState.Error("Đăng ký tài khoản thất bại (Không lấy được ID)")
                 }
-            } else {
-                authState = AuthState.Error("Đăng ký tài khoản thất bại")
+
+            } catch (e: FirebaseAuthUserCollisionException) {
+                // BẮT ĐƯỢC LỖI TRÙNG EMAIL Ở ĐÂY
+                authState = AuthState.Error("Email này đã được đăng ký! Vui lòng dùng email khác.")
+            } catch (e: FirebaseAuthWeakPasswordException) {
+                authState = AuthState.Error("Mật khẩu quá yếu (cần ít nhất 6 ký tự).")
+            } catch (e: FirebaseAuthInvalidCredentialsException) {
+                authState = AuthState.Error("Định dạng email không hợp lệ!")
+            } catch (e: Exception) {
+                // Các lỗi khác (như rớt mạng...)
+                authState = AuthState.Error(e.message ?: "Lỗi không xác định khi đăng ký")
             }
         }
     }
