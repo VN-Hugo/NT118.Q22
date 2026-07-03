@@ -397,6 +397,43 @@ fun BookingTripCard(booking: Booking, onClick: () -> Unit, onCancel: () -> Unit)
                     Icon(Icons.Default.DateRange, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
                     Text(dateRange, fontSize = 13.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
                 }
+
+                if (booking.paymentMethod.isNotEmpty()) {
+                    val methodLabel = when(booking.paymentMethod) {
+                        "momo" -> "Ví MoMo"
+                        "zalopay" -> "Ví ZaloPay"
+                        "visa" -> "Thẻ Visa"
+                        "cash" -> "Thanh toán tại chỗ"
+                        else -> booking.paymentMethod
+                    }
+                    val statusLabel = when(booking.paymentStatus) {
+                        "paid" -> "Đã thanh toán"
+                        "unpaid" -> "Chưa thanh toán"
+                        else -> "Chưa thanh toán"
+                    }
+                    val badgeColor = when(booking.paymentStatus) {
+                        "paid" -> Color(0xFFE8F5E9) // soft green
+                        else -> Color(0xFFFFF3E0) // soft orange
+                    }
+                    val textColor = when(booking.paymentStatus) {
+                        "paid" -> Color(0xFF2E7D32)
+                        else -> Color(0xFFE65100)
+                    }
+
+                    Surface(
+                        color = badgeColor,
+                        shape = RoundedCornerShape(6.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Text(
+                            text = "$methodLabel · $statusLabel",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
                 

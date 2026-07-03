@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.layout.*
 //import androidx.compose.foundation.shape.RoundedCornerShape
 //import androidx.compose.material.icons.Icons
@@ -50,6 +51,7 @@ fun PropertyDetailScreen(
     val state by viewModel.state.collectAsState()
     val bookingUiState by viewModel.bookingUiState.collectAsState()
     val context = LocalContext.current
+    var showPaymentSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(bookingUiState) {
         when (bookingUiState) {
@@ -71,8 +73,8 @@ fun PropertyDetailScreen(
             if (state is PropertyDetailState.Success) {
                 BookingBottomBar(
                     totalPrice = viewModel.totalBookingPrice,
-                    isLoading = bookingUiState is BookingUiState.Loading,
-                    onBookingConfirm = { viewModel.createBooking() }
+                    isLoading = bookingUiState is BookingUiState.Loading || bookingUiState is BookingUiState.PaymentProcessing,
+                    onBookingConfirm = { showPaymentSheet = true }
                 )
             }
         }
@@ -95,6 +97,72 @@ fun PropertyDetailScreen(
                         text = currentState.message,
                         color = Color.Red,
                         modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            }
+
+            // Simulated Online Payment Transition Overlay
+            if (bookingUiState is BookingUiState.PaymentProcessing) {
+                val methodName = when (viewModel.selectedPaymentMethod) {
+                    "momo" -> "MoMo"
+                    "zalopay" -> "ZaloPay"
+                    "visa" -> "thẻ Visa/Mastercard"
+                    else -> "Cổng thanh toán"
+                }
+                val brandColor = when (viewModel.selectedPaymentMethod) {
+                    "momo" -> Color(0xFFA50064)
+                    "zalopay" -> Color(0xFF008FE5)
+                    "visa" -> Color(0xFF1A1F71)
+                    else -> Color(0xFF1976D2)
+                }
+
+                Dialog(onDismissRequest = {}) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(color = brandColor, modifier = Modifier.size(48.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Text(
+                                text = "Đang xử lý thanh toán qua $methodName...",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                color = Color.DarkGray
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Vui lòng không tắt ứng dụng hoặc chuyển trang.",
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Payment Selection Sheet
+            if (showPaymentSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showPaymentSheet = false },
+                    sheetState = rememberModalBottomSheetState(),
+                    containerColor = Color.White
+                ) {
+                    PaymentSheetContent(
+                        totalPrice = viewModel.totalBookingPrice,
+                        selectedMethod = viewModel.selectedPaymentMethod,
+                        onSelectMethod = { viewModel.selectedPaymentMethod = it },
+                        onConfirm = {
+                            showPaymentSheet = false
+                            viewModel.createBooking()
+                        }
                     )
                 }
             }
@@ -373,3 +441,123 @@ fun PropertyMiniMap(
         }
     }
 }
+
+@Composable
+fun PaymentSheetContent(
+    totalPrice: Double,
+    selectedMethod: String,
+    onSelectMethod: (String) -> Unit,
+    onConfirm: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 32.dp)
+    ) {
+        Text(
+            text = "Phương thức thanh toán",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Payment Option List
+        val options = listOf(
+            PaymentOption("momo", "Ví điện tử MoMo", "Momo", Color(0xFFA50064)),
+            PaymentOption("zalopay", "Ví điện tử ZaloPay", "Zalo", Color(0xFF008FE5)),
+            PaymentOption("visa", "Thẻ Visa / Mastercard", "VISA", Color(0xFF1A1F71)),
+            PaymentOption("cash", "Thanh toán khi nhận phòng (Tiền mặt)", "CASH", Color(0xFF4CAF50))
+        )
+
+        options.forEach { option ->
+            val isSelected = selectedMethod == option.id
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clickable { onSelectMethod(option.id) },
+                shape = RoundedCornerShape(12.dp),
+                color = if (isSelected) option.brandColor.copy(alpha = 0.08f) else Color(0xFFF8F9FA),
+                border = BorderStroke(
+                    1.5.dp,
+                    if (isSelected) option.brandColor else Color(0xFFE0E0E0)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Simulated Logo / Badge
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(option.brandColor, RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = option.abbr,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = option.name,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 14.sp,
+                        color = Color.DarkGray,
+                        modifier = Modifier.weight(1f)
+                    )
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = { onSelectMethod(option.id) },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = option.brandColor
+                        )
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Total price row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Tổng thanh toán", color = Color.Gray, fontSize = 13.sp)
+            Text(
+                text = "đ${String.format(Locale.getDefault(), "%,.0f", totalPrice)}",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF1976D2)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Confirm button
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
+        ) {
+            Text("Thanh toán & Đặt phòng", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 15.sp)
+        }
+    }
+}
+
+data class PaymentOption(
+    val id: String,
+    val name: String,
+    val abbr: String,
+    val brandColor: Color
+)

@@ -29,6 +29,7 @@ sealed class PropertyDetailState {
 sealed class BookingUiState {
     object Idle : BookingUiState()
     object Loading : BookingUiState()
+    object PaymentProcessing : BookingUiState()
     object Success : BookingUiState()
     data class Error(val message: String) : BookingUiState()
 }
@@ -54,6 +55,7 @@ class PropertyDetailViewModel @Inject constructor(
     var startDate by mutableStateOf<Long?>(null)
     var endDate by mutableStateOf<Long?>(null)
     var roomQuantity by mutableStateOf(1)
+    var selectedPaymentMethod by mutableStateOf("momo") // Default payment method
 
     val numberOfNights: Int
         get() {
@@ -123,7 +125,13 @@ class PropertyDetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _bookingUiState.value = BookingUiState.Loading
+            if (selectedPaymentMethod != "cash") {
+                _bookingUiState.value = BookingUiState.PaymentProcessing
+                kotlinx.coroutines.delay(2000) // Simulated online payment delay
+            } else {
+                _bookingUiState.value = BookingUiState.Loading
+            }
+
             try {
                 // Check availability via BookingRepository
                 val available = bookingRepository.checkRoomAvailability(
@@ -145,6 +153,8 @@ class PropertyDetailViewModel @Inject constructor(
                     endDate = end,
                     totalPrice = totalBookingPrice,
                     status = "pending", // Mặc định là chờ duyệt
+                    paymentMethod = selectedPaymentMethod,
+                    paymentStatus = if (selectedPaymentMethod == "cash") "unpaid" else "paid",
                     bookingType = "hotel",
                     hotelBooking = HotelBookingDetails(
                         roomTypeId = room.roomTypeId,

@@ -45,10 +45,9 @@ class TripViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            // Combine bookings and plans into a single state
             combine(
-                bookingRepository.getUserBookings(uid),
-                planRepository.getUserPlans(uid)
+                bookingRepository.getUserBookings(uid).onStart { emit(emptyList()) },
+                planRepository.getUserPlans(uid).onStart { emit(emptyList()) }
             ) { allBookings, allPlans ->
                 val now = System.currentTimeMillis()
                 

@@ -42,8 +42,8 @@ class AuthViewModel @Inject constructor(
             if (success) {
                 val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
 
-                // KIỂM TRA XEM ĐÃ XÁC NHẬN EMAIL CHƯA
-                if (currentUser != null && currentUser.isEmailVerified) {
+                // KIỂM TRA XEM ĐÃ XÁC NHẬN EMAIL CHƯA (Cho phép đăng nhập thẳng ở chế độ Debug)
+                if (currentUser != null && (currentUser.isEmailVerified || com.example.travelapp.BuildConfig.DEBUG)) {
                     fetchRoleAndSuccess()
                 } else {
                     authState = AuthState.Error("Tài khoản chưa xác thực. Vui lòng kiểm tra Email của bạn!")

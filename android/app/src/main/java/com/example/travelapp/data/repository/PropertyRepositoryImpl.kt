@@ -51,7 +51,6 @@ class PropertyRepositoryImpl @Inject constructor(
 
     override fun searchProperties(query: String): Flow<List<Property>> = callbackFlow {
         val subscription = propertiesCollection
-            .whereEqualTo("status", "APPROVED")
             .whereGreaterThanOrEqualTo("name", query)
             .whereLessThanOrEqualTo("name", query + "\uf8ff")
             .addSnapshotListener { snapshot, error ->

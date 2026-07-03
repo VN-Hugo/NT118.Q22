@@ -11,6 +11,8 @@ data class Booking(
     val endDate: Long = 0L,
     val totalPrice: Double = 0.0,
     val status: String = "pending", // pending, confirmed, cancelled, rejected
+    val paymentMethod: String = "", // momo, zalopay, visa, cash
+    val paymentStatus: String = "unpaid", // paid, unpaid, refunded
     val bookingType: String = "hotel",
     val countAdult: Int = 0,
     val countChild: Int = 0,

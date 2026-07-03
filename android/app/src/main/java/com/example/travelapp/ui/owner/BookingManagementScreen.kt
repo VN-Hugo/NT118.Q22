@@ -247,6 +247,21 @@ fun BookingManagementCard(booking: Booking, onAccept: () -> Unit, onReject: () -
             booking.hotelBooking?.let {
                 BookingInfoRow(painterResource(id = R.drawable.ic_history), "Số lượng: ${it.quantity} phòng")
             }
+            if (booking.paymentMethod.isNotEmpty()) {
+                val methodLabel = when(booking.paymentMethod) {
+                    "momo" -> "MoMo"
+                    "zalopay" -> "ZaloPay"
+                    "visa" -> "Visa/Mastercard"
+                    "cash" -> "Thanh toán khi nhận phòng (Tiền mặt)"
+                    else -> booking.paymentMethod
+                }
+                val statusLabel = when(booking.paymentStatus) {
+                    "paid" -> "Đã thanh toán"
+                    "unpaid" -> "Chưa thanh toán"
+                    else -> "Chưa thanh toán"
+                }
+                BookingInfoRow(painterResource(id = R.drawable.ic_history), "Thanh toán: $methodLabel ($statusLabel)")
+            }
             BookingInfoRow(painterResource(id = R.drawable.ic_history), "Tổng thu: đ${String.format(Locale.getDefault(), "%,.0f", booking.totalPrice)}", true)
 
             if (booking.status == "pending") {
